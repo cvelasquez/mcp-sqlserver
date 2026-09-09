@@ -1,505 +1,126 @@
 #!/usr/bin/env node
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+// Punto de entrada. Se mantiene en la raíz a propósito: hay clientes MCP
+// configurados con "args": ["C:\\mcp-sqlserver\\index.js"] desde v1 y esa ruta
+// tiene que seguir funcionando.
+
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
 import sql from "mssql";
-import { readFileSync } from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { createSqlServer } from "./src/server.js";
+import { PACKAGE_ROOT, userConfigPath, ENV_PATH_VAR, ENV_INLINE_VAR } from "./src/config.js";
 
-// Cargar conexiones desde el archivo JSON
-const connectionsPath = join(__dirname, "connections.json");
-let connections = [];
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf-8"));
 
-// Función para cargar/recargar conexiones
-function loadConnections() {
-  const connectionsData = JSON.parse(readFileSync(connectionsPath, "utf-8"));
-  connections = connectionsData.connections;
-  return connections.length;
+function parseArgs(argv) {
+  const opts = { connections: null, init: false, help: false, version: false };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--connections" || arg === "-c") opts.connections = argv[++i];
+    else if (arg.startsWith("--connections=")) opts.connections = arg.slice("--connections=".length);
+    else if (arg === "--init") opts.init = true;
+    else if (arg === "--help" || arg === "-h") opts.help = true;
+    else if (arg === "--version" || arg === "-v") opts.version = true;
+  }
+  return opts;
 }
 
-// Cargar conexiones al iniciar
-loadConnections();
+const HELP = `${pkg.name} ${pkg.version}
 
-// Mantener pool de conexiones activas
-const connectionPools = new Map();
+One MCP server for every SQL Server instance you administer.
 
-// Función para obtener o crear pool de conexión
-async function getConnectionPool(connectionName) {
-  if (connectionPools.has(connectionName)) {
-    return connectionPools.get(connectionName);
+Usage:
+  mcp-sqlserver [options]
+
+Options:
+  -c, --connections <path>  Path to connections.json
+      --init                Create a starter connections.json and exit
+  -v, --version             Print version and exit
+  -h, --help                Show this help
+
+Connections file, in order of precedence:
+  --connections <path>
+  $${ENV_PATH_VAR}         path to a connections.json
+  $${ENV_INLINE_VAR}    the JSON itself, inline
+  ./connections.json                    current directory
+  ${userConfigPath()}
+  ${join(PACKAGE_ROOT, "connections.json")}
+
+Docs: ${pkg.homepage ?? "https://github.com/cvelasquez/mcp-sqlserver"}
+`;
+
+function runInit(targetPath) {
+  const target = targetPath ? resolve(targetPath) : userConfigPath();
+  if (existsSync(target)) {
+    console.error(`connections.json already exists at ${target} — leaving it untouched.`);
+    return 0;
   }
-
-  const connConfig = connections.find((c) => c.name === connectionName);
-  if (!connConfig) {
-    throw new Error(`Connection '${connectionName}' not found`);
+  const template = join(PACKAGE_ROOT, "connections.template.json");
+  if (!existsSync(template)) {
+    console.error(`Could not find the template at ${template}`);
+    return 1;
   }
-
-  const config = {
-    server: connConfig.server,
-    database: connConfig.database,
-    user: connConfig.user,
-    password: connConfig.password,
-    options: {
-      encrypt: connConfig.encrypt,
-      trustServerCertificate: connConfig.trustServerCertificate,
-    },
-    port: connConfig.port,
-  };
-
-  const pool = await sql.connect(config);
-  connectionPools.set(connectionName, pool);
-  return pool;
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, readFileSync(template, "utf-8"));
+  console.error(
+    `Created ${target}\n\n` +
+      `Edit it with your servers, then point your AI agent at this MCP server:\n\n` +
+      `  {"mcpServers":{"sqlserver":{"command":"npx","args":["-y","${pkg.name}"]}}}\n`
+  );
+  return 0;
 }
 
-const server = new Server(
-  {
-    name: "mssql-server",
-    version: "2.0.0",
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
+async function main() {
+  const opts = parseArgs(process.argv.slice(2));
 
-// Herramientas disponibles
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      {
-        name: "list_connections",
-        description: "List all available SQL Server connections grouped by connectionGroup",
-        inputSchema: {
-          type: "object",
-          properties: {},
-        },
-      },
-      {
-        name: "reload_connections",
-        description: "Reload connections from connections.json file without restarting the MCP server. Closes existing connection pools and loads new configuration.",
-        inputSchema: {
-          type: "object",
-          properties: {},
-        },
-      },
-      {
-        name: "query",
-        description: "Execute a SQL query on the database",
-        inputSchema: {
-          type: "object",
-          properties: {
-            connection: {
-              type: "string",
-              description: "Connection name to use",
-            },
-            sql: {
-              type: "string",
-              description: "SQL query to execute",
-            },
-          },
-          required: ["connection", "sql"],
-        },
-      },
-      {
-        name: "get_schema",
-        description: "Get database schema information for specific tables",
-        inputSchema: {
-          type: "object",
-          properties: {
-            connection: {
-              type: "string",
-              description: "Connection name to use",
-            },
-            table: {
-              type: "string",
-              description: "Table name (optional, returns all if not specified)",
-            },
-          },
-          required: ["connection"],
-        },
-      },
-      {
-        name: "get_indexes",
-        description: "Get index information for a table",
-        inputSchema: {
-          type: "object",
-          properties: {
-            connection: {
-              type: "string",
-              description: "Connection name to use",
-            },
-            table: {
-              type: "string",
-              description: "Table name",
-            },
-          },
-          required: ["connection", "table"],
-        },
-      },
-      {
-        name: "get_execution_plan",
-        description: "Get execution plan for a query",
-        inputSchema: {
-          type: "object",
-          properties: {
-            connection: {
-              type: "string",
-              description: "Connection name to use",
-            },
-            sql: {
-              type: "string",
-              description: "SQL query to analyze",
-            },
-          },
-          required: ["connection", "sql"],
-        },
-      },
-      {
-        name: "get_stored_procedure",
-        description: "Get stored procedure definition",
-        inputSchema: {
-          type: "object",
-          properties: {
-            connection: {
-              type: "string",
-              description: "Connection name to use",
-            },
-            name: {
-              type: "string",
-              description: "Stored procedure name",
-            },
-          },
-          required: ["connection", "name"],
-        },
-      },
-    ],
-  };
-});
+  // Salen antes de que el transporte MCP tome stdout, así que acá stdout es
+  // libre y `mcp-sqlserver --version | cat` funciona.
+  if (opts.help) { console.log(HELP); return 0; }
+  if (opts.version) { console.log(pkg.version); return 0; }
+  if (opts.init) return runInit(opts.connections);
 
-// Handler para ejecutar herramientas
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+  const { server, pools, getState } = createSqlServer({
+    driver: sql,
+    version: pkg.version,
+    loadOptions: { cliPath: opts.connections },
+  });
 
-  try {
-    // Comando list_connections
-    if (name === "list_connections") {
-      const grouped = {};
-      
-      connections.forEach((conn) => {
-        if (!grouped[conn.connectionGroup]) {
-          grouped[conn.connectionGroup] = [];
-        }
-        grouped[conn.connectionGroup].push({
-          name: conn.name,
-          description: conn.description,
-          server: conn.server,
-          database: conn.database,
-        });
-      });
-
-      let output = "Available SQL Server Connections:\n\n";
-      
-      for (const [group, conns] of Object.entries(grouped)) {
-        output += `${group}:\n`;
-        conns.forEach((conn) => {
-          output += `  - ${conn.name}\n`;
-          output += `    Description: ${conn.description}\n`;
-          output += `    Server: ${conn.server}\n`;
-          output += `    Database: ${conn.database}\n\n`;
-        });
-      }
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: output,
-          },
-        ],
-      };
-    }
-
-    // Comando reload_connections
-    if (name === "reload_connections") {
-      try {
-        // Cerrar todos los pools de conexión existentes
-        const closedPools = [];
-        for (const [connName, pool] of connectionPools.entries()) {
-          try {
-            await pool.close();
-            closedPools.push(connName);
-          } catch (err) {
-            // Ignorar errores al cerrar pools
-          }
-        }
-        connectionPools.clear();
-
-        // Recargar configuración
-        const count = loadConnections();
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  success: true,
-                  message: "Connections reloaded successfully",
-                  totalConnections: count,
-                  closedPools: closedPools.length,
-                  connectionNames: connections.map(c => c.name),
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  success: false,
-                  error: error.message,
-                },
-                null,
-                2
-              ),
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-
-    // Validar que se proporcione el parámetro connection
-    if (!args.connection) {
-      throw new Error("Connection parameter is required");
-    }
-
-    // Obtener información de la conexión para metadata
-    const connConfig = connections.find((c) => c.name === args.connection);
-    if (!connConfig) {
-      throw new Error(`Connection '${args.connection}' not found`);
-    }
-
-    const metadata = {
-      connection: args.connection,
-      connectionGroup: connConfig.connectionGroup,
-      description: connConfig.description,
-      server: connConfig.server,
-      database: connConfig.database,
-    };
-
-    // Obtener pool de conexión
-    const pool = await getConnectionPool(args.connection);
-
-    switch (name) {
-      case "query": {
-        const result = await pool.query(args.sql);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  metadata,
-                  data: result.recordset,
-                  rowsAffected: result.rowsAffected[0],
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
-      }
-
-      case "get_schema": {
-        const query = args.table
-          ? `
-            SELECT 
-              c.TABLE_NAME,
-              c.COLUMN_NAME,
-              c.DATA_TYPE,
-              c.CHARACTER_MAXIMUM_LENGTH,
-              c.IS_NULLABLE,
-              c.COLUMN_DEFAULT
-            FROM INFORMATION_SCHEMA.COLUMNS c
-            WHERE c.TABLE_NAME = '${args.table}'
-            ORDER BY c.ORDINAL_POSITION
-          `
-          : `
-            SELECT 
-              c.TABLE_NAME,
-              c.COLUMN_NAME,
-              c.DATA_TYPE,
-              c.CHARACTER_MAXIMUM_LENGTH,
-              c.IS_NULLABLE
-            FROM INFORMATION_SCHEMA.COLUMNS c
-            ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION
-          `;
-
-        const result = await pool.query(query);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  metadata,
-                  schema: result.recordset,
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
-      }
-
-      case "get_indexes": {
-        const query = `
-          SELECT 
-            i.name AS IndexName,
-            i.type_desc AS IndexType,
-            COL_NAME(ic.object_id, ic.column_id) AS ColumnName,
-            ic.is_included_column AS IsIncluded
-          FROM sys.indexes i
-          INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-          WHERE OBJECT_NAME(i.object_id) = '${args.table}'
-          ORDER BY i.name, ic.key_ordinal
-        `;
-
-        const result = await pool.query(query);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  metadata,
-                  indexes: result.recordset,
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
-      }
-
-      case "get_execution_plan": {
-        try {
-          // Crear un request único para mantener la sesión
-          const request = pool.request();
-          
-          // Activar SHOWPLAN_XML (debe ser la única sentencia en el batch)
-          await request.batch("SET SHOWPLAN_XML ON");
-          
-          // Ejecutar la consulta para obtener el plan (no ejecuta la query, solo devuelve el plan)
-          const planResult = await request.batch(args.sql);
-          
-          // Desactivar SHOWPLAN_XML
-          await request.batch("SET SHOWPLAN_XML OFF");
-          
-          // El plan XML viene en el recordsets
-          let planXml = null;
-          if (planResult.recordsets && planResult.recordsets.length > 0) {
-            const planRecordset = planResult.recordsets[0];
-            if (planRecordset && planRecordset.length > 0) {
-              const firstRow = planRecordset[0];
-              // Intentar diferentes nombres de columna comunes
-              planXml = firstRow['Microsoft SQL Server 2005 XML Showplan'] || 
-                       firstRow['QUERY PLAN'] ||
-                       firstRow[Object.keys(firstRow)[0]];
-            }
-          }
-
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify(
-                  {
-                    metadata,
-                    query: args.sql,
-                    executionPlanXml: planXml
-                  },
-                  null,
-                  2
-                ),
-              },
-            ],
-          };
-        } catch (error) {
-          // Asegurarse de desactivar SHOWPLAN_XML en caso de error
-          try {
-            await pool.request().batch("SET SHOWPLAN_XML OFF");
-          } catch (e) {
-            // Ignorar errores al desactivar
-          }
-          throw error;
-        }
-      }
-
-      case "get_stored_procedure": {
-        const query = `
-          SELECT OBJECT_DEFINITION(OBJECT_ID('${args.name}')) AS Definition
-        `;
-
-        const result = await pool.query(query);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  metadata,
-                  storedProcedure: args.name,
-                  definition: result.recordset[0]?.Definition || "Stored procedure not found",
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
-      }
-
-      default:
-        throw new Error(`Unknown tool: ${name}`);
-    }
-  } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error: ${error.message}`,
-        },
-      ],
-      isError: true,
-    };
-  }
-});
-
-async function runServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("SQL Server MCP Server v2.0 running on stdio");
-  console.error(`Loaded ${connections.length} connections from ${connectionsPath}`);
+
+  const state = getState();
+  console.error(`${pkg.name} v${pkg.version} running on stdio`);
+  if (state.error && state.connections.length === 0) {
+    // Arrancar igual y reportar por la herramienta: si el proceso muere acá,
+    // el cliente MCP solo muestra "server disconnected" y nadie sabe por qué.
+    console.error(`No connections loaded.\n${state.error}`);
+  } else {
+    console.error(`Loaded ${state.connections.length} connections from ${state.path ?? state.source}`);
+    if (state.error) console.error(`Warnings:\n${state.error}`);
+  }
+
+  process.on("unhandledRejection", (reason) => {
+    console.error(`Unhandled rejection: ${reason?.stack ?? reason}`);
+  });
+
+  const shutdown = async () => {
+    await pools.closeAll();
+    process.exit(0);
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+
+  return 0;
 }
 
-runServer().catch(console.error);
+main().then(
+  (code) => { if (code) process.exit(code); },
+  (err) => {
+    console.error(`Fatal: ${err?.stack ?? err}`);
+    process.exit(1);
+  }
+);

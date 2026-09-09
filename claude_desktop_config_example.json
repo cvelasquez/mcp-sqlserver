@@ -1,27 +1,8 @@
 {
   "mcpServers": {
-    "chrome-devtools": {
-      "command": "npx",
-      "args": ["chrome-devtools-mcp@latest"]
-    },
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "C:\\Users\\cvela\\OneDrive\\Documents\\Whitelion",
-        "C:\\mcp-claudecodebridge",
-        "C:\\ClaudeCodeWorkspace",
-        "C:\\mcp-sqlserver"
-      ]
-    },
-    "claudecode-bridge": {
-      "command": "node",
-      "args": ["C:\\mcp-claudecodebridge\\src\\index.js"]
-    },
     "sqlserver": {
-      "command": "node",
-      "args": ["C:\\mcp-sqlserver\\index.js"]
+      "command": "npx",
+      "args": ["-y", "@cvelasquez/mcp-sqlserver"]
     }
   }
 }

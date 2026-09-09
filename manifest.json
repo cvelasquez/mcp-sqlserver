@@ -1,0 +1,50 @@
+{
+  "manifest_version": "0.3",
+  "name": "mcp-sqlserver",
+  "display_name": "SQL Server MCP",
+  "version": "3.0.0",
+  "description": "MCP server for DBAs running dozens of SQL Server instances: grouped connections, plans, indexes",
+  "long_description": "One MCP entry for every SQL Server you administer. Connections live in a single connections.json grouped by client or environment, hot-reloaded without restarting the agent. Every response says which server and database answered it. Beyond running queries it returns execution plans, index layouts and stored-procedure source, so an agent can actually diagnose a slow query instead of guessing.",
+  "author": {
+    "name": "Christian Velasquez Astucuri",
+    "url": "https://github.com/cvelasquez"
+  },
+  "homepage": "https://github.com/cvelasquez/mcp-sqlserver",
+  "documentation": "https://github.com/cvelasquez/mcp-sqlserver#readme",
+  "support": "https://github.com/cvelasquez/mcp-sqlserver/issues",
+  "license": "MIT",
+  "keywords": ["sql-server", "mssql", "database", "dba", "execution-plan"],
+  "server": {
+    "type": "node",
+    "entry_point": "index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/index.js"],
+      "env": {
+        "MSSQL_MCP_CONNECTIONS": "${user_config.connections_file}"
+      }
+    }
+  },
+  "user_config": {
+    "connections_file": {
+      "type": "file",
+      "title": "connections.json",
+      "description": "File describing every SQL Server you want the agent to reach. See connections.template.json in the repository for the format.",
+      "required": true
+    }
+  },
+  "tools": [
+    { "name": "list_connections", "description": "List all available SQL Server connections grouped by connectionGroup" },
+    { "name": "reload_connections", "description": "Reload connections.json without restarting the MCP server" },
+    { "name": "query", "description": "Execute a SQL query on the database" },
+    { "name": "get_schema", "description": "Get database schema information for specific tables" },
+    { "name": "get_indexes", "description": "Get index information for a table" },
+    { "name": "get_execution_plan", "description": "Get execution plan for a query" },
+    { "name": "get_stored_procedure", "description": "Get stored procedure definition" }
+  ],
+  "compatibility": {
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

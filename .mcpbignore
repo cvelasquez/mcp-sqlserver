@@ -1,0 +1,26 @@
+# OJO: mcpb NO respeta .gitignore. Sin este archivo el bundle se lleva
+# connections.json con las credenciales adentro, y el .mcpb va a un release
+# público y a Smithery.
+#
+# Los patrones de carpeta van anclados con / a la raíz. Sin anclar, "dist/"
+# también excluye node_modules/@modelcontextprotocol/sdk/dist/ y el bundle
+# queda roto: node_modules no se toca salvo lo que claramente sobra.
+connections*.json
+!connections.template.json
+.env
+.env.*
+
+# Desarrollo: nada de esto hace falta para correr el servidor
+/test/
+/.github/
+/docs/
+/dist/
+/*.mcpb
+/CLAUDE.md
+/CONTRIBUTING.md
+/claude_desktop_config_example.json
+/glama.json
+/server.json
+/.gitattributes
+/.gitignore
+/package-lock.json

@@ -1,27 +1,45 @@
 {
-  "name": "mcp-sqlserver",
-  "version": "2.0.0",
-  "description": "MCP Server for SQL Server with centralized multi-connection management, hot-reload capabilities, and comprehensive database analysis tools",
+  "name": "@cvelasquez/mcp-sqlserver",
+  "version": "3.0.0",
+  "mcpName": "io.github.cvelasquez/mcp-sqlserver",
+  "description": "MCP server for DBAs running dozens of SQL Server instances: grouped connections, plans, indexes",
   "type": "module",
   "main": "index.js",
   "bin": {
-    "mcp-sqlserver": "./index.js"
+    "mcp-sqlserver": "index.js"
   },
+  "files": [
+    "index.js",
+    "src/",
+    "connections.template.json",
+    "web/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test",
+    "test:integration": "node --test test/integration.test.js",
+    "build:mcpb": "npx --yes @anthropic-ai/mcpb pack . dist/mcp-sqlserver.mcpb && node .github/scripts/check-bundle.mjs dist/mcp-sqlserver.mcpb",
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "mcp",
     "model-context-protocol",
     "sql-server",
+    "mssql",
+    "sqlserver",
+    "tsql",
+    "dba",
     "database",
+    "execution-plan",
+    "query-optimization",
+    "stored-procedures",
     "claude",
     "anthropic",
-    "mssql",
-    "database-tools",
-    "sql-analysis",
-    "connection-management"
+    "ai-agents",
+    "database-tools"
   ],
   "author": {
     "name": "Christian Velasquez Astucuri",
@@ -30,22 +48,20 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cvelasquez/mcp-mssql-sqlserver.git"
+    "url": "git+https://github.com/cvelasquez/mcp-sqlserver.git"
   },
   "bugs": {
-    "url": "https://github.com/cvelasquez/mcp-mssql-sqlserver/issues"
+    "url": "https://github.com/cvelasquez/mcp-sqlserver/issues"
   },
-  "homepage": "https://github.com/cvelasquez/mcp-mssql-sqlserver#readme",
+  "homepage": "https://github.com/cvelasquez/mcp-sqlserver#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.19.1",
     "mssql": "^12.0.0"
-  },
-  "devDependencies": {
-    "@types/mssql": "^9.1.8",
-    "@types/node": "^24.7.0",
-    "typescript": "^5.9.3"
   }
 }

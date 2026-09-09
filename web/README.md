@@ -19,17 +19,17 @@ Simple web interface to visually manage the `connections.json` file for MCP SQL 
 
 ### Option 1: Open directly
 1. Navigate to the folder: `C:\mcp-sqlserver\`
-2. Double-click `connections.html`
+2. Double-click `web/connections.html`
 3. It will open in your default browser
 
 ### Option 2: From browser
 1. Open your browser
-2. Drag the `connections.html` file to the browser window
+2. Drag the `web/connections.html` file to the browser window
 3. Or use the path: `file:///C:/mcp-sqlserver/connections.html`
 
 ### Option 3: Auto-load (Recommended)
-1. Place `connections.html` in the same directory as `connections.json`
-2. Open `connections.html` in your browser
+1. Place `web/connections.html` in the same directory as `connections.json`
+2. Open `web/connections.html` in your browser
 3. The file will be loaded automatically if found!
 
 ## 📋 Recommended Workflow
@@ -37,7 +37,7 @@ Simple web interface to visually manage the `connections.json` file for MCP SQL 
 ### To create/modify connections:
 
 1. **Open the web UI**:
-   - Double-click `connections.html`
+   - Double-click `web/connections.html`
    - If `connections.json` is in the same folder, it will load automatically
    - Otherwise, click "Load connections.json" and select your file
 
@@ -183,7 +183,7 @@ Simple web interface to visually manage the `connections.json` file for MCP SQL 
 ## 💡 Tips
 
 ### Using Auto-save (Recommended)
-1. Open `connections.html` in Chrome or Edge (86+)
+1. Open `web/connections.html` in Chrome or Edge (86+)
 2. Click "Load connections.json"
 3. Grant read/write permission when prompted
 4. ✅ See green notification: "Auto-save enabled!"
@@ -304,7 +304,7 @@ file:///C:/mcp-sqlserver/connections.html
 
 ## 🚀 Changelog
 
-### Version 2.1 (Latest - 2026-01-14)
+### Version 2.1 (2026-01-14)
 - ✨ **New**: Auto-save with File System Access API
 - ✨ **New**: Floating persistent notifications for save status
 - ✨ **New**: Auto-load connections.json from root directory

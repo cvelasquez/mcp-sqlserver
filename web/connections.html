@@ -189,6 +189,11 @@
                         <input type="checkbox" name="trustServerCertificate" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4">
                         <span class="ml-2 text-sm text-gray-700">Trust server certificate</span>
                     </label>
+
+                    <label class="flex items-center">
+                        <input type="checkbox" name="readOnly" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4">
+                        <span class="ml-2 text-sm text-gray-700">Read-only (reject writing statements)</span>
+                    </label>
                 </div>
 
                 <div class="flex gap-3 pt-4 border-t">
@@ -607,6 +612,7 @@
             form.port.value = conn.port;
             form.encrypt.checked = conn.encrypt;
             form.trustServerCertificate.checked = conn.trustServerCertificate;
+            form.readOnly.checked = conn.readOnly === true;
 
             document.getElementById('modal').classList.remove('hidden');
         }
@@ -663,7 +669,15 @@
             e.preventDefault();
 
             const formData = new FormData(e.target);
+
+            // Editing merges over the existing connection instead of replacing
+            // it. The form has ten fields; connections.json supports more —
+            // readOnly, domain, authentication, requestTimeout, pool. Replacing
+            // the object silently dropped them, which turned off the read-only
+            // guard and broke domain and Entra ID logins on any edit.
+            const existing = editingIndex >= 0 ? connections.connections[editingIndex] : {};
             const connection = {
+                ...existing,
                 name: formData.get('name'),
                 connectionGroup: formData.get('connectionGroup'),
                 description: formData.get('description'),
@@ -673,8 +687,11 @@
                 password: formData.get('password'),
                 port: parseInt(formData.get('port')),
                 encrypt: formData.get('encrypt') === 'on',
-                trustServerCertificate: formData.get('trustServerCertificate') === 'on'
+                trustServerCertificate: formData.get('trustServerCertificate') === 'on',
+                readOnly: formData.get('readOnly') === 'on'
             };
+
+            if (!connection.readOnly) delete connection.readOnly;
 
             // Validate name format
             if (!/^[a-zA-Z0-9_-]+$/.test(connection.name)) {

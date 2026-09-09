@@ -1,52 +1,72 @@
 {
+  "_comment": "Copy to connections.json (or ~/.mcp-sqlserver/connections.json) and edit. Only 'name' and 'server' are required. Any string may reference an environment variable with the env: placeholder syntax shown below, so passwords need not live in this file.",
+
   "connections": [
     {
       "name": "local-dev",
       "connectionGroup": "Development",
-      "description": "Base de datos local de desarrollo",
+      "description": "Local development database",
       "server": "localhost",
       "database": "MyDatabase",
       "user": "sa",
-      "password": "YourPassword",
+      "password": "${env:LOCAL_SQL_PASSWORD}",
       "port": 1433,
       "encrypt": false,
       "trustServerCertificate": true
     },
     {
-      "name": "cliente-produccion",
-      "connectionGroup": "ClienteNombre",
-      "description": "Base de datos producción - Sede Principal",
+      "name": "acme-prod",
+      "connectionGroup": "Acme Corp",
+      "description": "Production - head office",
       "server": "192.168.1.10\\SQLEXPRESS",
-      "database": "ClienteDB_Prod",
-      "user": "app_user",
-      "password": "SecurePassword123",
+      "database": "AcmeDB_Prod",
+      "user": "app_reader",
+      "password": "${env:ACME_PROD_PASSWORD}",
       "port": 1433,
       "encrypt": true,
-      "trustServerCertificate": false
+      "trustServerCertificate": false,
+      "readOnly": true
     },
     {
-      "name": "cliente-qa",
-      "connectionGroup": "ClienteNombre",
-      "description": "Ambiente QA - Pruebas",
+      "name": "acme-qa",
+      "connectionGroup": "Acme Corp",
+      "description": "QA environment",
       "server": "192.168.1.11",
-      "database": "ClienteDB_QA",
+      "database": "AcmeDB_QA",
       "user": "qa_user",
-      "password": "QAPassword123",
+      "password": "${env:ACME_QA_PASSWORD}",
       "port": 1433,
       "encrypt": false,
       "trustServerCertificate": true
     },
     {
-      "name": "analytics-warehouse",
+      "name": "warehouse-domain-auth",
       "connectionGroup": "Analytics",
-      "description": "Data Warehouse para reportes y análisis",
-      "server": "datawarehouse.company.com",
+      "description": "Data warehouse over Windows domain (NTLM) authentication",
+      "server": "datawarehouse.corp.local",
       "database": "DWH_Main",
-      "user": "analytics_reader",
-      "password": "AnalyticsPass123",
+      "domain": "CORP",
+      "user": "svc_analytics",
+      "password": "${env:DWH_PASSWORD}",
       "port": 1433,
       "encrypt": true,
-      "trustServerCertificate": true
+      "trustServerCertificate": true,
+      "readOnly": true
+    },
+    {
+      "name": "azure-sql",
+      "connectionGroup": "Analytics",
+      "description": "Azure SQL Database over Entra ID",
+      "server": "myserver.database.windows.net",
+      "database": "reporting",
+      "encrypt": true,
+      "authentication": {
+        "type": "azure-active-directory-password",
+        "options": {
+          "userName": "${env:AZURE_SQL_USER}",
+          "password": "${env:AZURE_SQL_PASSWORD}"
+        }
+      }
     }
   ]
 }

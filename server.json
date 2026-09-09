@@ -1,0 +1,40 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.cvelasquez/mcp-sqlserver",
+  "title": "SQL Server MCP",
+  "description": "MCP server for DBAs running dozens of SQL Server instances: grouped connections, plans, indexes",
+  "version": "3.0.0",
+  "websiteUrl": "https://github.com/cvelasquez/mcp-sqlserver",
+  "repository": {
+    "url": "https://github.com/cvelasquez/mcp-sqlserver",
+    "source": "github",
+    "id": "1070953058"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@cvelasquez/mcp-sqlserver",
+      "version": "3.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "MSSQL_MCP_CONNECTIONS",
+          "description": "Path to connections.json. Defaults to ~/.mcp-sqlserver/connections.json; create one with --init.",
+          "format": "filepath",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "MSSQL_MCP_CONNECTIONS_JSON",
+          "description": "The connections JSON inline, for setups that keep credentials out of the filesystem.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
