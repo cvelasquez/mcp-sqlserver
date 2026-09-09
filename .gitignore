@@ -1,5 +1,12 @@
-# Archivos de configuración con credenciales
-connections.json
+# Archivos de configuración con credenciales.
+# El patrón es amplio a propósito: connections-cliente.json, connections.bak.json
+# y cualquier variante quedan afuera. Solo el template se versiona.
+connections*.json
+!connections.template.json
+
+# Bundles generados
+dist/
+*.mcpb
 
 # Node modules
 node_modules/

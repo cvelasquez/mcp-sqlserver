@@ -7,6 +7,136 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [3.0.0] - 2026-09-09
+
+> From this release on, entries are written in English to match the rest of the
+> documentation. Older entries are left as they were published.
+
+Published to npm as **`@cvelasquez/mcp-sqlserver`**. The unscoped
+`mcp-sqlserver` name on npm belongs to an unrelated package that was
+unpublished in 2025 and cannot be reused.
+
+### Fixed
+
+- **Every connection after the first talked to the wrong database.** The server
+  called `sql.connect(config)`, which is the `mssql` *global* connection pool.
+  Once any connection is open, that function discards the config it is given
+  and returns the existing pool
+  ([`mssql/lib/global-connection.js`](https://github.com/tediousjs/node-mssql/blob/master/lib/global-connection.js)).
+  So asking for `client-b` handed back `client-a`'s pool, and the query ran
+  against `client-a`'s server and database, silently. Every connection now gets
+  its own `ConnectionPool`. Covered by a regression test.
+
+  If you used more than one connection in a session on 2.x, results may not
+  have come from where you believed. Worth re-checking anything you acted on.
+
+- **SQL injection in three tools.** `get_schema`, `get_indexes` and
+  `get_stored_procedure` interpolated the table or procedure name straight into
+  the query text. They now use bound parameters.
+
+- **A missing `connections.json` killed the process at startup**, so the agent
+  showed only "server disconnected" with no explanation. The server now starts
+  regardless and `list_connections` reports what went wrong and where it looked.
+
+- **Connection options were being dropped.** The driver config was assembled
+  field by field, discarding `domain`, `authentication`, `connectionTimeout`,
+  `requestTimeout`, `pool` and any nested `options`. Everything that is not our
+  own metadata is now passed through to `mssql`.
+
+- **`get_execution_plan` could run the query for real.** `SET SHOWPLAN_XML ON`
+  is connection state, but `pool.request()` does not pin a connection — mssql
+  acquires and releases one per batch. With a second call in flight, the
+  `SHOWPLAN_XML ON` could land on one connection and the query on another,
+  without a plan, executing for real; meanwhile the marked connection stayed in
+  showplan mode and returned XML to unrelated queries. The plan now runs on a
+  dedicated single-connection pool that is closed afterwards, which destroys
+  the connection along with its session state.
+
+- **A non-string `sql` argument bypassed the read-only guard and still ran.**
+  The MCP SDK does not validate arguments against `inputSchema`, and
+  `pool.query()` treats a non-string as a tagged template and executes its
+  first element. `{"sql": {"0": "DELETE FROM Users"}}` therefore ran against a
+  connection marked read-only. String arguments are now type-checked first.
+
+- **Statements that slipped past the read-only guard.** A procedure call
+  without `EXEC` (`sp_rename 'dbo.Users','Users_old'`, legal T-SQL) contains no
+  blocked keyword. The guard now also requires the batch to start with a
+  reading keyword, and blocks `OPENQUERY`, `DISABLE`, `ENABLE` and `WAITFOR`.
+
+- **The read-only guard blocked legitimate queries.** `DECLARE @Create` matched
+  the `CREATE` keyword, because `@` is not a word character. Variables and temp
+  tables are excluded now.
+
+- **A dropped connection could kill the whole server.** `mssql` emits `error`
+  on the pool for failures that arrive outside any promise — a server restart,
+  Azure SQL closing an idle session. An `EventEmitter` with no `error` listener
+  throws, and the uncaught exception took the process down, so one bad
+  connection disconnected every other one.
+
+- **`MSSQL_MCP_CONNECTIONS_JSON` silently overrode `--connections`**, contrary
+  to the documented precedence. Explicit paths now win.
+
+- **An unset `${env:VAR}` left the literal in the config**, so the failure
+  surfaced later as `Login failed for user`. The connection is now disabled and
+  named, along with the variable that is missing.
+
+- **A `port` coming from an environment variable arrived as a string** and
+  tedious rejected the whole config with a `TypeError`. Numeric strings are
+  coerced.
+
+- **The web UI silently dropped fields it does not have inputs for.** Editing
+  any connection rebuilt it from the ten form fields, wiping `readOnly`,
+  `domain` and `authentication` — turning off the read-only guard and breaking
+  domain and Entra ID logins. It merges now, and `readOnly` has a checkbox.
+
+### Added
+
+- **Install with one line.** `npx -y @cvelasquez/mcp-sqlserver` — no clone, no
+  `npm install`, no absolute paths in the agent config.
+- **`--init`** writes a starter `~/.mcp-sqlserver/connections.json`.
+- **Connections file resolution**: `--connections`, `$MSSQL_MCP_CONNECTIONS`,
+  `$MSSQL_MCP_CONNECTIONS_JSON` (inline), the working directory, the user
+  config directory, then the package directory. An explicit path that does not
+  exist is an error rather than a silent fallback to another file.
+- **`${env:VAR}` in any string**, so passwords need not live in the file.
+  Unset variables are reported at startup.
+- **`"readOnly": true` per connection** rejects writing statements before the
+  query leaves the machine. A guard rail against an over-helpful agent, not a
+  security boundary — the README says so and shows the `db_datareader` login
+  that is. Any value other than an explicit `false` enables it, so a
+  hand-written `"readOnly": "false"` cannot quietly disable the guard.
+- **Windows domain (NTLM) and Entra ID authentication**, documented, via the
+  config passthrough.
+- **Test suite** on `node:test`, no new dependencies. The `mssql` driver is
+  injected and mocked only at that boundary. `test/contract.test.js` freezes
+  the tool names and arguments; an end-to-end smoke test packs the tarball,
+  installs it elsewhere and speaks MCP to it.
+- **CI** on Node 18/20/22 across Linux and Windows, including a check that no
+  credential file can reach the npm tarball and that `server.json` validates
+  against the MCP registry.
+- **`.mcpb` bundle** for one-click installation in Claude Desktop.
+- **`server.json`** and **`glama.json`** for the official MCP registry and Glama.
+
+### Changed
+
+- `index.js` is now a thin entry point; the logic lives in `src/`. The path
+  `node <repo>/index.js` still works, so existing agent configs keep running.
+- `list_connections` marks read-only connections and reports which file it
+  loaded, so "why is it not seeing my change" is answerable at a glance.
+- The web UI moved to `web/`. GitHub was reporting the repository as an HTML
+  project because that one file outweighed the server.
+- `node_modules` is no longer tracked in git.
+- Documentation rewritten around what this server actually does better than
+  the alternatives: many instances, grouped, in one entry.
+
+### Unchanged
+
+- All seven tools keep their names, arguments and response shape.
+- Existing `connections.json` files work as they are. Every new field is
+  optional; there is nothing to migrate.
+
+---
+
 ## [2.0.0] - 2026-01-01
 
 ### 🎉 Cambios Mayores
@@ -342,4 +472,4 @@ Elimina todas las entradas `sqlserver-xxx` y deja una única entrada:
 ---
 
 **¿Encontraste un bug o tienes una sugerencia?**  
-Abre un issue en [GitHub Issues](https://github.com/tu-usuario/mcp-sqlserver/issues)
+Abre un issue en [GitHub Issues](https://github.com/cvelasquez/mcp-sqlserver/issues)

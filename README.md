@@ -1,692 +1,335 @@
-# MCP SQL Server
+# SQL Server MCP for people who manage dozens of instances
 
+[![npm](https://img.shields.io/npm/v/@cvelasquez/mcp-sqlserver.svg)](https://www.npmjs.com/package/@cvelasquez/mcp-sqlserver)
+[![CI](https://github.com/cvelasquez/mcp-sqlserver/actions/workflows/ci.yml/badge.svg)](https://github.com/cvelasquez/mcp-sqlserver/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
-[![MCP](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io/)
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/cvelasquez?style=social)](https://github.com/sponsors/cvelasquez)
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-orange.svg)](https://buymeacoffee.com/cvelasquez)
+[![MCP](https://img.shields.io/badge/MCP-compatible-blue.svg)](https://modelcontextprotocol.io/)
 
-MCP (Model Context Protocol) server for interacting with multiple SQL Server instances from AI agents like Claude Desktop, ChatGPT, GitHub Copilot, Google Gemini, and other MCP-compatible AI assistants.
+One MCP entry, every SQL Server you administer. Connections live in a single
+`connections.json`, grouped by client or environment, hot-reloaded without
+restarting your AI agent — plus execution plans, index audits and
+stored-procedure analysis.
 
-## Version 2.1 - Features
+Built for DBAs and consultants, not for a demo against a single localhost
+database.
 
-- **Centralized multiple connections**: All connections defined in `connections.json`
-- **Client grouping**: Organize connections by `connectionGroup`
-- **Detailed descriptions**: Each connection includes a description to identify purpose/location
-- **Metadata in responses**: All operations include information about the connection used
-- **Hot-reload**: Update connections without restarting your AI agent using `reload_connections`
-- **Connection pooling**: Efficient reuse of active connections
-- **Execution plans**: Detailed query performance analysis
-- **Stored procedure analysis**: Retrieve and analyze SP definitions
-- **Web UI with auto-save**: Visual management interface with automatic file saving
+## Install
 
-## Installation
+Add this to your AI agent's MCP configuration:
 
-```bash
-cd C:\mcp-sqlserver
-npm install
-```
-
-## Configuration
-
-### 1. connections.json File
-
-Define all your connections in the `connections.json` file:
-
-```json
-{
-  "connections": [
-    {
-      "name": "production-main",
-      "connectionGroup": "Production",
-      "description": "Main production database",
-      "server": "192.168.1.10\\SQLEXPRESS",
-      "database": "ProductionDB",
-      "user": "sa",
-      "password": "your_password",
-      "port": 1433,
-      "encrypt": false,
-      "trustServerCertificate": true
-    },
-    {
-      "name": "staging-main",
-      "connectionGroup": "Staging",
-      "description": "Staging environment database",
-      "server": "192.168.1.11",
-      "database": "StagingDB",
-      "user": "app_user",
-      "password": "secure_password",
-      "port": 1433,
-      "encrypt": false,
-      "trustServerCertificate": true
-    }
-  ]
-}
-```
-
-**Configuration fields:**
-- `name` (string, required): Unique connection identifier
-- `connectionGroup` (string, required): Group it belongs to (e.g., client, project, environment)
-- `description` (string, required): Detailed connection description
-- `server` (string, required): SQL Server (can include instance name)
-- `database` (string, required): Database name
-- `user` (string, required): SQL Server user
-- `password` (string, required): Password
-- `port` (number, required): Port (usually 1433)
-- `encrypt` (boolean, required): Encrypt the connection
-- `trustServerCertificate` (boolean, required): Trust server certificate
-
-### 2. MCP Configuration
-
-Add the MCP server to your AI agent's configuration file:
-
-**For Claude Desktop** (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
     "sqlserver": {
-      "command": "node",
-      "args": ["C:\\mcp-sqlserver\\index.js"]
+      "command": "npx",
+      "args": ["-y", "@cvelasquez/mcp-sqlserver"]
     }
   }
 }
 ```
 
-**For other MCP-compatible AI agents:**
-Follow your specific agent's MCP configuration instructions and point to `index.js`.
+Then create your connections file and restart the agent:
 
-**Important!** You only need one MCP entry. All connections are managed from `connections.json`.
-
-### 3. Web UI (Optional) 🎨
-
-Includes a simple web interface to visually edit the `connections.json` file without manual editing.
-
-**Location:** `C:\mcp-sqlserver\connections.html`
-
-**Features:**
-- ✅ No installation, no build, no dependencies
-- ✅ **Auto-load** connections.json if in the same folder
-- ✅ Visual connection editing (add, edit, **duplicate**, delete)
-- ✅ **Drag & drop** connections between groups
-- ✅ **Smart group selector** (prevents typos)
-- ✅ Automatic grouping by `connectionGroup`
-- ✅ Real-time form validation
-- ✅ **Auto-save** with File System Access API (Chrome/Edge 86+)
-- ✅ Complete **English** interface
-- ✅ Download modified connections.json file
-- ✅ **Completely optional**: The MCP works perfectly without the UI
-
-**Quick usage:**
-1. Open `C:\mcp-sqlserver\connections.html` in your browser
-2. **File auto-loads** if in the same folder, or click "Load connections.json"
-3. Edit connections visually:
-   - Duplicate connections with the copy button
-   - Drag cards between groups to reorganize
-   - Select existing groups or create new ones
-4. With auto-save: Changes save automatically (Chrome/Edge 86+)
-5. Without auto-save: Download the modified file and replace
-6. In your AI agent: `"Reload SQL Server connections"`
-
-**More information:** See [connections-README.md](connections-README.md)
-
----
-
-## Available Tools
-
-### 1. list_connections
-Lists all available connections grouped by `connectionGroup`.
-
-**Parameters:** None
-
-**Example usage:**
-```
-List all available SQL Server connections
+```bash
+npx -y @cvelasquez/mcp-sqlserver --init
 ```
 
-**Response:**
-```
-Available SQL Server Connections:
+That writes `~/.mcp-sqlserver/connections.json` from a commented template. Edit
+it, and ask your agent to *"list all SQL Server connections"*.
 
-Production:
-  - production-main
-    Description: Main production database
-    Server: 192.168.1.10\SQLEXPRESS
-    Database: ProductionDB
+<details>
+<summary>Where each agent keeps its MCP config</summary>
 
-Staging:
-  - staging-main
-    Description: Staging environment database
-    Server: 192.168.1.11
-    Database: StagingDB
-```
+| Agent | Config file |
+|---|---|
+| Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Code | `claude mcp add sqlserver -- npx -y @cvelasquez/mcp-sqlserver` |
+| VS Code / Copilot | `.vscode/mcp.json` |
+| Cursor | `~/.cursor/mcp.json` |
 
----
+Any MCP-compatible agent works — ChatGPT, Gemini, Copilot, Cline, Zed and
+others all take the same `command` / `args` pair.
+</details>
 
-### 2. reload_connections ⚡
-Reloads the `connections.json` file without restarting your AI agent. Automatically closes obsolete connection pools and loads new configuration.
+## Why this one
 
-**Parameters:** None
+Most SQL Server MCP servers take a single connection string. That is fine for
+one database. It falls apart when you administer thirty across eight clients,
+because every instance needs its own entry in the agent config, its own
+credentials, and its own restart when something changes.
 
-**Example usage:**
-```
-Reload SQL Server connections
-```
+| | Single-DSN servers | This one |
+|---|---|---|
+| Instances per MCP entry | 1 | all of them |
+| Organised by client or environment | — | `connectionGroup` |
+| Add or change a connection | edit agent config, restart | edit a file, `reload_connections` |
+| Which server answered? | you assume | in every response's `metadata` |
+| Beyond `SELECT` | — | execution plans, index layout, SP source |
+| Read-only safety rail | — | `"readOnly": true` per connection |
 
-**Response:**
+## Connections
+
 ```json
 {
-  "success": true,
-  "message": "Connections reloaded successfully",
-  "totalConnections": 5,
-  "closedPools": 2,
-  "connectionNames": [
-    "production-main",
-    "staging-main",
-    ...
+  "connections": [
+    {
+      "name": "acme-prod",
+      "connectionGroup": "Acme Corp",
+      "description": "Production - head office",
+      "server": "192.168.1.10\\SQLEXPRESS",
+      "database": "AcmeDB_Prod",
+      "user": "app_reader",
+      "password": "${env:ACME_PROD_PASSWORD}",
+      "port": 1433,
+      "encrypt": true,
+      "trustServerCertificate": false,
+      "readOnly": true
+    }
   ]
 }
 ```
 
-**Use cases:**
-- Add new connections without interrupting work
-- Modify credentials or connection configuration
-- Remove obsolete connections
-- Update descriptions or connection groups
+| Field | Required | Notes |
+|---|---|---|
+| `name` | yes | Unique; this is what you say to the agent |
+| `server` | yes | Hostname, IP, or `host\instance` |
+| `connectionGroup` | no | Client, project or environment. Groups the listing |
+| `description` | no | Shown in `list_connections` and in every response |
+| `database` | no | Defaults to the login's default database |
+| `user`, `password` | no | Omit for domain or Entra ID auth |
+| `port` | no | Defaults to 1433 |
+| `encrypt`, `trustServerCertificate` | no | `encrypt` defaults to true |
+| `readOnly` | no | Rejects writing statements — see below |
 
----
+Anything else you put here is passed straight to [`mssql`](https://www.npmjs.com/package/mssql),
+so `requestTimeout`, `connectionTimeout`, `pool`, `authentication` and a nested
+`options` object all work.
 
-### 3. query
-Executes a SQL query and returns results with connection metadata.
+### Keeping passwords out of the file
 
-**Parameters:**
-- `connection` (string, required): Connection name to use
-- `sql` (string, required): SQL query to execute
-
-**Example usage:**
-```
-Use the production-main connection and execute:
-SELECT TOP 10 * FROM Employees WHERE Department = 'Sales'
-```
-
-**Response includes:**
-- Connection metadata (group, description, server, database)
-- Query result data
-- Number of affected rows
-
----
-
-### 4. get_schema
-Gets complete schema of a table or entire database.
-
-**Parameters:**
-- `connection` (string, required): Connection name
-- `table` (string, optional): Specific table name
-
-**Example usage:**
-```
-Show me the complete schema of the Employees table in the production-main connection
-```
-
-**Returns:**
-- Column names
-- Data types
-- Maximum character length
-- Nullable status
-- Default values
-
----
-
-### 5. get_indexes
-Gets detailed index information for a table.
-
-**Parameters:**
-- `connection` (string, required): Connection name
-- `table` (string, required): Table name
-
-**Example usage:**
-```
-What indexes does the Orders table have in staging-main?
-```
-
-**Returns:**
-- Index name
-- Type (CLUSTERED, NONCLUSTERED, etc.)
-- Included columns
-- INCLUDE columns
-
----
-
-### 6. get_execution_plan
-Gets XML execution plan of a query for performance analysis.
-
-**Parameters:**
-- `connection` (string, required): Connection name
-- `sql` (string, required): SQL query to analyze
-
-**Example usage:**
-```
-Analyze the execution plan of this query in production-main:
-SELECT o.*, c.CustomerName
-FROM Orders o
-JOIN Customers c ON o.CustomerId = c.Id
-WHERE o.OrderDate > '2024-01-01'
-```
-
-**Returns:**
-- Execution plan in XML format
-- Information about operations (scans, seeks, joins)
-- Estimated costs
-- Missing indexes suggested by SQL Server
-- Performance warnings
-
-**Analysis you can request:**
-- Identify table scans and recommend indexes
-- Detect expensive operations
-- Suggest query optimizations
-- Compare execution plans of different query versions
-
----
-
-### 7. get_stored_procedure
-Gets the complete definition of a stored procedure.
-
-**Parameters:**
-- `connection` (string, required): Connection name
-- `name` (string, required): Stored procedure name
-
-**Example usage:**
-```
-Use the production-main connection and show me the code for sp_CalculatePayroll
-```
-
-**Returns:**
-- Complete stored procedure code
-- Parameters
-- Implemented logic
-
-**Analysis you can request:**
-- Review and suggest code improvements
-- Identify performance issues
-- Document procedure logic
-- Detect possible bugs or code smells
-
----
-
-## Response Format
-
-All tools (except `list_connections` and `reload_connections`) include complete metadata in their responses:
+Any string may reference an environment variable:
 
 ```json
-{
-  "metadata": {
-    "connection": "production-main",
-    "connectionGroup": "Production",
-    "description": "Main production database",
-    "server": "192.168.1.10\\SQLEXPRESS",
-    "database": "ProductionDB"
-  },
-  "data": [...],
-  "rowsAffected": 10
-}
+"password": "${env:ACME_PROD_PASSWORD}"
 ```
 
-This metadata allows you to:
-- Confirm which connection was used
-- Identify the group it belongs to
-- Verify queried server and database
-- Have complete context in long conversations
+A connection that references a variable you have not set is **disabled**, and
+`list_connections` names both the connection and the missing variable. Leaving
+the literal in place would only move the failure to connect time, where it
+arrives as `Login failed for user` and tells you nothing.
 
----
+You can also skip the file entirely and pass the whole thing through the agent
+config, which keeps credentials in one place with the rest of your MCP secrets:
 
-## Advanced Use Cases
-
-### Example 1: Stored Procedure Analysis and Optimization
-```
-Use the production SQL Server MCP connection and analyze what improvements
-we can make to the sp_CalculateOvertimeHours stored procedure. Review the
-code, identify potential performance issues, and suggest optimizations.
-```
-
-### Example 2: Schema Comparison Between Environments
-```
-Compare the Employees table schema between the production-main and
-staging-main connections. Identify differences in columns, data types, and indexes.
-```
-
-### Example 3: Query Performance Analysis
-```
-In the production-main connection, analyze the execution plan of this query:
-SELECT * FROM Orders WHERE Status = 'Pending' AND OrderDate > '2024-01-01'
-
-Identify table scans, suggest missing indexes, and optimizations.
-```
-
-### Example 4: Index Audit
-```
-Using the production-main connection, list all tables that have no indexes
-or only have a clustered index. Suggest what additional indexes we should create.
-```
-
-### Example 5: Complete Workflow - Add a Connection
-```
-1. [Edit connections.json and add the new connection]
-2. "Reload SQL Server connections"
-3. "List available connections"
-4. "Use the new connection and execute SELECT TOP 5 * FROM SystemInfo"
-```
-
----
-
-## Connection Management
-
-### Add a New Connection (Recommended Workflow)
-
-1. Edit the `connections.json` file
-2. Add the new connection to the array:
-
-```json
-{
-  "name": "dev-environment",
-  "connectionGroup": "Development",
-  "description": "Development environment - Testing database",
-  "server": "localhost",
-  "database": "DevDB",
-  "user": "dev_user",
-  "password": "dev_password",
-  "port": 1433,
-  "encrypt": false,
-  "trustServerCertificate": true
-}
-```
-
-3. In your AI agent, execute: `"Reload SQL Server connections"`
-4. Verify with: `"List all available connections"`
-5. Done! The new connection is immediately available
-
-### Modify an Existing Connection
-
-1. Edit the necessary fields in `connections.json`
-2. Execute in your AI agent: `"Reload SQL Server connections"`
-3. Active connections will close and reload automatically
-
-### Delete a Connection
-
-1. Remove the entry from the array in `connections.json`
-2. Execute in your AI agent: `"Reload SQL Server connections"`
-3. The connection pool will close automatically
-
----
-
-## Troubleshooting
-
-### Error: Connection 'xxx' not found
-**Cause:** Connection name doesn't exist in `connections.json` or is misspelled.
-
-**Solution:**
-1. Execute `"List all available connections"` to see exact names
-2. Verify name in `connections.json` matches exactly (case-sensitive)
-3. If you just added the connection, execute `"Reload connections"`
-
-### SQL Server Connection Error
-**Possible causes:**
-- Incorrect credentials
-- Server or instance misconfigured
-- Incorrect port
-- Firewall blocking connection
-- SQL Server doesn't allow remote connections
-
-**Diagnosis:**
-1. Verify credentials (server, user, password, database)
-2. Test connectivity: `ping [server]` and `telnet [server] [port]`
-3. Verify SQL Server allows SQL Server authentication (not just Windows)
-4. Check SQL Server logs for more details
-5. Verify user has permissions on the database
-
-### AI Agent Doesn't Find MCP
-**Solution:**
-1. Verify absolute path in your agent's config file
-2. Ensure `node` is installed and in your PATH
-3. Restart your AI agent completely (close all windows)
-4. Verify `index.js` file exists at the specified path
-5. Test manual execution: `node C:\mcp-sqlserver\index.js`
-
-### Error Reloading Connections
-**Cause:** `connections.json` file with invalid JSON format.
-
-**Solution:**
-1. Validate JSON at https://jsonlint.com/
-2. Verify all commas are correct
-3. Verify no missing or extra braces `{}`
-4. Verify all strings are in double quotes `"`
-
----
-
-## Security
-
-⚠️ **Important**: The `connections.json` file contains passwords in plain text.
-
-### Security Recommendations:
-
-1. **Version control:**
-   - ❌ **DO NOT upload** `connections.json` to public repositories
-   - ✅ Add `connections.json` to your `.gitignore`
-   - ✅ Use a `connections.template.json` file with example values
-
-2. **File permissions:**
-   - Restrict read permissions to necessary user only
-   - Windows: `icacls connections.json /inheritance:r /grant:r "%USERNAME%:F"`
-   - Linux/Mac: `chmod 600 connections.json`
-
-3. **Credentials:**
-   - Use SQL Server users with minimum necessary permissions
-   - Don't use `sa` accounts in production
-   - Consider using Windows integrated authentication when possible
-   - Rotate passwords periodically
-
-4. **Production:**
-   - Consider using Azure Key Vault or similar for secrets
-   - Implement environment variables instead of plain text
-   - Use encrypted connections (`encrypt: true`)
-
-### Example .gitignore
-
-```gitignore
-# MCP SQL Server
-connections.json
-node_modules/
-*.log
-```
-
----
-
-## Migration from Version 1.0
-
-If you were using the previous version with multiple entries in your AI agent's config file:
-
-### Step 1: Create connections.json
-Convert your connections from old format:
-
-**Old format (agent config):**
 ```json
 {
   "mcpServers": {
-    "sqlserver-prod": {
-      "command": "node",
-      "args": ["C:\\mcp-sqlserver\\index.js"],
+    "sqlserver": {
+      "command": "npx",
+      "args": ["-y", "@cvelasquez/mcp-sqlserver"],
       "env": {
-        "SQL_SERVER": "192.168.1.10\\SQLEXPRESS",
-        "SQL_DATABASE": "ProductionDB",
-        ...
+        "MSSQL_MCP_CONNECTIONS_JSON": "{\"connections\":[{\"name\":\"prod\",\"server\":\"10.0.0.1\",\"database\":\"App\",\"user\":\"reader\",\"password\":\"...\"}]}"
       }
     }
   }
 }
 ```
 
-**New format (connections.json):**
+### Where the file is looked for
+
+In order, first hit wins:
+
+1. `--connections <path>`
+2. `$MSSQL_MCP_CONNECTIONS` — a path
+3. `$MSSQL_MCP_CONNECTIONS_JSON` — the JSON itself, inline
+4. `./connections.json` in the working directory
+5. `~/.mcp-sqlserver/connections.json`
+6. `connections.json` next to the installed package
+
+A path given explicitly via 1 or 2 that does not exist is an error — the server
+will not quietly fall back to a different file and talk to the wrong database.
+
+### Windows domain and Entra ID authentication
+
+The bundled `tedious` driver supports NTLM and the Entra ID (Azure AD) family.
+Add `domain` for NTLM:
+
 ```json
 {
-  "connections": [
-    {
-      "name": "production-main",
-      "connectionGroup": "Production",
-      "description": "Main production database",
-      "server": "192.168.1.10\\SQLEXPRESS",
-      "database": "ProductionDB",
-      ...
-    }
-  ]
+  "name": "warehouse",
+  "server": "dwh.corp.local",
+  "database": "DWH",
+  "domain": "CORP",
+  "user": "svc_analytics",
+  "password": "${env:DWH_PASSWORD}"
 }
 ```
 
-### Step 2: Update Agent Configuration
-Replace all `sqlserver-xxx` entries with a single entry:
-
 ```json
 {
-  "mcpServers": {
-    "sqlserver": {
-      "command": "node",
-      "args": ["C:\\mcp-sqlserver\\index.js"]
-    }
+  "name": "azure-sql",
+  "server": "myserver.database.windows.net",
+  "database": "reporting",
+  "encrypt": true,
+  "authentication": {
+    "type": "azure-active-directory-password",
+    "options": { "userName": "${env:AZURE_USER}", "password": "${env:AZURE_PASSWORD}" }
   }
 }
 ```
 
-### Step 3: Restart Your AI Agent
-Completely close and reopen your AI agent.
+Fully integrated auth — a trusted connection with no password at all — needs
+the native `msnodesqlv8` driver, which is not bundled because it would break
+the one-line install on machines without a build toolchain. NTLM with an
+explicit service account is the supported path.
 
-### Step 4: Verify
-Execute: `"List all available SQL Server connections"`
+## Tools
 
----
+| Tool | Arguments | What it does |
+|---|---|---|
+| `list_connections` | — | Every connection, grouped |
+| `reload_connections` | — | Re-read the file, drop open pools |
+| `query` | `connection`, `sql` | Run a query |
+| `get_schema` | `connection`, `table?` | Columns, types, nullability, defaults |
+| `get_indexes` | `connection`, `table` | Indexes, types, key and included columns |
+| `get_execution_plan` | `connection`, `sql` | `SHOWPLAN_XML` — the plan, without running the query |
+| `get_stored_procedure` | `connection`, `name` | Source of a stored procedure |
 
-## Development and Testing
+Every response carries the connection it came from:
 
-### Project Structure
-
+```json
+{
+  "metadata": {
+    "connection": "acme-prod",
+    "connectionGroup": "Acme Corp",
+    "description": "Production - head office",
+    "server": "192.168.1.10\\SQLEXPRESS",
+    "database": "AcmeDB_Prod"
+  },
+  "data": [ ... ]
+}
 ```
-mcp-sqlserver/
-├── index.js                      # Main MCP server
-├── connections.json              # Connection configuration
-├── connections.template.json     # Example template
-├── connections.html              # Web UI with auto-save
-├── connections-README.md         # Web UI documentation
-├── package.json                  # npm dependencies
-├── README.md                     # This file
-├── CHANGELOG.md                  # Change history
-├── CLAUDE.md                     # Claude Code guidance
-└── .gitignore                    # Ignored files
+
+With thirty connections in play, that line is what tells you the answer came
+from the client you meant.
+
+### What this gets you
+
+Things that are tedious by hand and become one sentence to the agent:
+
+- *"Why is this stored procedure slow?"* — `get_stored_procedure` for the
+  source, `get_execution_plan` for the plan, `get_indexes` for what is missing.
+- *"Compare the Orders schema between acme-prod and acme-qa"* — `get_schema` on
+  both, agent diffs them.
+- *"Which indexes on this table are never covering anything?"* — `get_indexes`
+  plus the queries you care about.
+- *"I added a client to connections.json"* — `reload_connections`, no restart.
+
+## Read-only connections
+
+```json
+"readOnly": true
 ```
 
-### Manual Testing
+Rejects `INSERT`, `UPDATE`, `DELETE`, `MERGE`, `DROP`, `TRUNCATE`, `ALTER`,
+`CREATE`, `GRANT`, `EXEC`, `BACKUP`, `DBCC`, `OPENQUERY`, `DISABLE`/`ENABLE`
+and friends before the query leaves your machine. It also requires the batch to
+*start* with something that reads — `SELECT`, `WITH`, `DECLARE`, `SET`, `IF`
+and so on — because T-SQL lets you call a procedure without `EXEC`, and
+`sp_rename 'dbo.Users','Users_old'` contains no blocked keyword at all.
+
+String literals, comments and bracketed identifiers are ignored, so
+`WHERE note = 'please delete this'`, `SELECT [delete] FROM [Audit]` and
+`DECLARE @Create DATETIME` all pass. `get_execution_plan` still works, because
+`SHOWPLAN_XML` returns the plan without executing anything.
+
+Anything other than an explicit `false` turns the guard **on** — a hand-written
+`"readOnly": "false"` locks the connection down rather than silently opening
+it, and says so in `list_connections`.
+
+**This is a guard rail, not a security boundary.** It stops an agent from
+"helpfully" fixing a row in production. It will not stop someone determined to
+write. The real protection is a SQL login that only has `db_datareader`:
+
+```sql
+CREATE LOGIN mcp_reader WITH PASSWORD = '...';
+CREATE USER mcp_reader FOR LOGIN mcp_reader;
+ALTER ROLE db_datareader ADD MEMBER mcp_reader;
+GRANT VIEW DEFINITION TO mcp_reader;   -- for get_stored_procedure
+GRANT SHOWPLAN TO mcp_reader;          -- for get_execution_plan
+```
+
+Use both.
+
+## Security notes
+
+- `connections.json` holds credentials. Keep it out of version control — the
+  bundled `.gitignore` covers `connections*.json`.
+- Prefer `${env:VAR}` over literal passwords.
+- Give each connection the least privilege it needs. Do not use `sa`.
+- Restrict file permissions:
+  `icacls connections.json /inheritance:r /grant:r "%USERNAME%:F"` on Windows,
+  `chmod 600 connections.json` elsewhere.
+- The `query` tool runs whatever SQL the agent writes. That is the point of the
+  tool — treat the connection's permissions as the boundary, not the tool.
+
+## Web UI
+
+`web/connections.html` is a standalone page for editing `connections.json`
+without hand-writing JSON: drag and drop between groups, duplicate a
+connection, autocompleting group selector, and auto-save through the File
+System Access API in Chrome and Edge. No build, no dependencies, entirely
+optional. See [web/README.md](web/README.md).
+
+## Claude Desktop one-click install
+
+Grab the `.mcpb` bundle from the
+[latest release](https://github.com/cvelasquez/mcp-sqlserver/releases/latest)
+and drag it onto Claude Desktop's extensions settings. It will ask for the path
+to your `connections.json` and wire everything up.
+
+## Upgrading from 2.x
+
+Your existing `connections.json` works unchanged — every new field is optional
+and the tools take the same arguments. Two things worth knowing:
+
+- **Multi-connection was broken before 3.0.** The server used the `mssql`
+  global connection pool, which ignores the config it is handed once a
+  connection is already open. In practice every connection after the first
+  silently reused the first one's server and database. If you were relying on
+  results from more than one connection in a session, they may not have come
+  from where you thought. Fixed in 3.0 with a pool per connection.
+- If your agent config points at `node C:\path\to\index.js`, that still works.
+  The file resolution order now checks that path last, so nothing moves.
+
+## Development
 
 ```bash
-# Verify syntax
-node index.js
-
-# View logs in Claude Desktop
-# Windows: %APPDATA%\Claude\logs
-# Mac: ~/Library/Logs/Claude
-# Linux: ~/.config/Claude/logs
+npm install
+npm test                     # unit tests, no database needed
+node .github/scripts/smoke.mjs   # packs, installs and speaks MCP to the tarball
 ```
 
-### Contributing
+Against a real server, name a connection from your own file:
 
-Contributions are welcome. Please:
+```bash
+MSSQL_TEST_CONNECTION=local npm run test:integration
+```
 
-1. Fork the repository
-2. Create a branch for your feature (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## Roadmap
-
-### Version 2.2 (Planned)
-- [ ] Windows integrated authentication support
-- [ ] Export query results to CSV/Excel
-- [ ] Automatic database schema backup
-- [ ] Command to compare schemas between connections
-- [ ] Explicit transaction support
-- [ ] Query execution history
-
-### Version 3.0 (Future)
-- [ ] Azure SQL Database support
-- [ ] Azure Key Vault integration for credentials
-- [ ] Usage metrics and monitoring
-- [ ] Support for other database types (PostgreSQL, MySQL)
-- [ ] Query result caching
-- [ ] Custom plugin system
-
----
+The `mssql` driver is injected, so the unit tests mock only that boundary —
+everything else is the real code path. `test/contract.test.js` freezes the tool
+names and arguments so a refactor cannot change the MCP surface by accident.
 
 ## License
 
-ISC
-
----
+MIT — see [LICENSE](LICENSE).
 
 ## Author
 
-Christian V. - @cvelasquez
+Christian Velasquez — [@cvelasquez](https://github.com/cvelasquez)
 
-### Contact and Support
-
-- **Issues:** [GitHub Issues](https://github.com/cvelasquez/mcp-sqlserver/issues)
-- **Documentation:** [Project Wiki](https://github.com/cvelasquez/mcp-sqlserver/wiki)
-
----
-
-## Changelog
-
-### v2.1.0 (2026-01-14)
-- ✨ **NEW:** Web UI with auto-save functionality (File System Access API)
-- ✨ **NEW:** Floating persistent notifications for save status
-- ✨ **NEW:** Auto-load connections.json from root directory
-- ✨ **NEW:** Duplicate connection button
-- ✨ **NEW:** Drag & drop connections between groups
-- ✨ **NEW:** Smart connection group selector with autocomplete
-- 🟢 **NEW:** Green notification when auto-save enabled
-- 🟠 **NEW:** Orange warning when manual save required
-- 🌐 **IMPROVED:** Complete English translation
-- 🎨 **IMPROVED:** Visual feedback when dragging
-- 🎨 **IMPROVED:** Reorganized button layout
-- 📝 **IMPROVED:** Better UX for group management
-- 🔧 **IMPROVED:** Generalized for multiple AI agents (Claude, ChatGPT, Gemini, Copilot, etc.)
-
-### v2.0.0 (2026-01-01)
-- ✨ **NEW:** `reload_connections` command for hot-reload without restart
-- ✨ **NEW:** `connectionGroup` field for organizing connections
-- ✨ **NEW:** `description` field for each connection
-- ✨ **NEW:** `get_execution_plan` command for performance analysis
-- ✨ **NEW:** Metadata included in all responses
-- 🔧 Centralized `connections.json` file
-- 🔧 Optimized connection pooling
-- 📝 Complete documentation update
-
-### v1.0.0 (2025-12-15)
-- 🎉 Initial release
-- ✅ Basic commands: query, get_schema, get_indexes, get_stored_procedure
-- ✅ Multiple connection support
-
----
-
-## Compatible AI Agents
-
-This MCP server works with any MCP-compatible AI agent, including:
-- 🤖 **Claude Desktop** (Anthropic)
-- 🤖 **ChatGPT** with MCP support
-- 🤖 **GitHub Copilot** with MCP integration
-- 🤖 **Google Gemini** with MCP support
-- 🤖 Any other AI agent that implements the Model Context Protocol
-
-**Ready to start?** 🚀
-
-1. Configure your `connections.json`
-2. Update your AI agent's MCP configuration
-3. Restart your AI agent
-4. Execute: `"List all available SQL Server connections"`
-5. Enjoy working with SQL Server from your AI assistant!
+[Issues](https://github.com/cvelasquez/mcp-sqlserver/issues) ·
+[Changelog](CHANGELOG.md) ·
+[Sponsor](https://github.com/sponsors/cvelasquez)

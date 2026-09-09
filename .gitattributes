@@ -1,0 +1,7 @@
+# La UI web es una herramienta opcional, no el proyecto. Sin esto GitHub
+# reporta el repo como HTML porque connections.html pesa más que el servidor.
+web/*.html linguist-detectable=false
+
+# Normalización de fin de línea
+* text=auto eol=lf
+*.png binary

@@ -116,7 +116,7 @@ Closes #67
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/tu-usuario/mcp-sqlserver.git
+git clone https://github.com/cvelasquez/mcp-sqlserver.git
 cd mcp-sqlserver
 
 # Instalar dependencias
@@ -133,16 +133,38 @@ cp connections.template.json connections.json
 
 ```
 mcp-sqlserver/
-├── index.js                      # Servidor MCP principal
-├── connections.json              # Configuración (NO subir)
+├── index.js                      # Punto de entrada (flags, arranque stdio)
+├── src/
+│   ├── config.js                 # Resolución y carga de connections.json
+│   ├── pools.js                  # Un pool de conexión por conexión declarada
+│   ├── readonly.js               # Baranda de solo lectura
+│   ├── server.js                 # Cableado de los handlers MCP
+│   └── tools.js                  # Las 7 herramientas y su despacho
+├── test/                         # node:test, sin dependencias extra
+│   └── helpers/fake-mssql.js     # Doble del driver, solo en el borde
+├── web/                          # UI opcional para editar connections.json
+├── .github/
+│   ├── scripts/                  # Smoke test end-to-end y chequeo del bundle
+│   └── workflows/                # CI y publicación
+├── connections.json              # Configuración local (NO subir)
 ├── connections.template.json     # Template de ejemplo
-├── package.json                  # Dependencias
-├── README.md                     # Documentación principal
-├── CHANGELOG.md                  # Historial de cambios
-├── CONTRIBUTING.md               # Esta guía
-├── LICENSE                       # Licencia ISC
-└── .gitignore                    # Archivos ignorados
+├── manifest.json                 # Bundle .mcpb (Claude Desktop, Smithery)
+├── server.json                   # Registro oficial de MCP
+├── glama.json                    # Directorio Glama
+└── docs/publishing.md            # Pasos de publicación
 ```
+
+### Tests
+
+```bash
+npm test                          # unitarios, sin base de datos
+node .github/scripts/smoke.mjs    # empaqueta, instala y habla MCP contra el tarball
+MSSQL_TEST_CONNECTION=local npm run test:integration
+```
+
+El driver `mssql` se inyecta, así que los tests mockean solo ese borde. Si
+tocás las herramientas, `test/contract.test.js` va a fallar a propósito: los
+nombres y parámetros son contrato público y cambiarlos es una versión mayor.
 
 ### Estándares de Código
 
@@ -199,8 +221,8 @@ Estas son áreas donde apreciamos especialmente contribuciones:
 
 Si tienes preguntas sobre cómo contribuir:
 
-1. Revisa los [issues existentes](https://github.com/tu-usuario/mcp-sqlserver/issues)
-2. Busca en [discusiones](https://github.com/tu-usuario/mcp-sqlserver/discussions)
+1. Revisa los [issues existentes](https://github.com/cvelasquez/mcp-sqlserver/issues)
+2. Busca en [discusiones](https://github.com/cvelasquez/mcp-sqlserver/discussions)
 3. Crea un nuevo issue con la etiqueta `question`
 
 ## Reconocimiento
@@ -209,7 +231,7 @@ Todos los contribuidores serán agregados al README.md en la sección de Contrib
 
 ## Licencia
 
-Al contribuir, aceptas que tus contribuciones serán licenciadas bajo la licencia ISC del proyecto.
+Al contribuir, aceptas que tus contribuciones serán licenciadas bajo la licencia MIT del proyecto.
 
 ---
 

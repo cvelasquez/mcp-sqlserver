@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['18', '20', '22']
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  package:
+    name: Package contents
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      # El tarball se arma con una lista blanca. Si alguna vez deja de estarlo,
+      # un connections.json con credenciales se publicaría a npm.
+      - name: No credential files in the tarball
+        run: |
+          npm pack --dry-run --json > pack.json
+          node -e "
+            const files = require('./pack.json')[0].files.map(f => f.path);
+            const leaks = files.filter(f => /^connections.*\.json$/.test(f) && f !== 'connections.template.json');
+            if (leaks.length) { console.error('Credential files in tarball:', leaks); process.exit(1); }
+            console.log('Tarball clean:', files.length, 'files');
+          "
+
+      - name: Server starts and answers tools/list
+        run: node .github/scripts/smoke.mjs
+
+      - name: No credential files in the .mcpb bundle
+        run: |
+          mkdir -p dist
+          npx --yes @anthropic-ai/mcpb pack . dist/mcp-sqlserver.mcpb
+          node .github/scripts/check-bundle.mjs dist/mcp-sqlserver.mcpb
+
+  registry:
+    name: server.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate against the MCP registry schema
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher validate
+
+      # Los tres tienen que moverse juntos o el registro rechaza la publicación.
+      - name: Versions agree across package.json, server.json and manifest.json
+        run: |
+          node -e "
+            const pkg = require('./package.json');
+            const server = require('./server.json');
+            const manifest = require('./manifest.json');
+            const problems = [];
+            if (server.version !== pkg.version) problems.push('server.json version ' + server.version + ' != package.json ' + pkg.version);
+            if (manifest.version !== pkg.version) problems.push('manifest.json version ' + manifest.version + ' != package.json ' + pkg.version);
+            if (server.packages[0].version !== pkg.version) problems.push('server.json package version != package.json');
+            if (server.packages[0].identifier !== pkg.name) problems.push('server.json identifier != package name');
+            if (server.name !== pkg.mcpName) problems.push('server.json name != package.json mcpName');
+            if (problems.length) { console.error(problems.join('\n')); process.exit(1); }
+            console.log('Everything agrees on ' + pkg.version);
+          "

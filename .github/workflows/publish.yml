@@ -1,0 +1,78 @@
+name: Publish
+
+# Se dispara con un tag vX.Y.Z. Publica a npm con procedencia (el badge de
+# "Provenance" en npm sale de acá) y después registra la versión en el
+# registro oficial de MCP usando OIDC, sin tokens de larga vida.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Tag matches package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG=$(node -p "require('./package.json').version")
+          test "$TAG" = "$PKG" || { echo "tag $TAG != package.json $PKG"; exit 1; }
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  mcpb:
+    runs-on: ubuntu-latest
+    needs: npm
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --omit=dev
+      - run: npx --yes @anthropic-ai/mcpb pack . mcp-sqlserver.mcpb
+      # mcpb no respeta .gitignore: sin este chequeo un connections.json puede
+      # terminar dentro de un release público.
+      - run: node .github/scripts/check-bundle.mjs mcp-sqlserver.mcpb
+      - name: Attach the bundle to the release
+        run: gh release upload "$GITHUB_REF_NAME" mcp-sqlserver.mcpb --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  registry:
+    runs-on: ubuntu-latest
+    needs: npm
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mcp-publisher
+        run: curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+      # npm tarda un momento en servir la versión nueva y el registro valida
+      # que el paquete exista con el mcpName correcto.
+      - name: Wait for npm to serve the new version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          for i in $(seq 1 30); do
+            if npm view "@cvelasquez/mcp-sqlserver@$VERSION" version >/dev/null 2>&1; then
+              echo "npm has $VERSION"; exit 0
+            fi
+            sleep 10
+          done
+          echo "npm never served $VERSION"; exit 1
+      - run: ./mcp-publisher login github-oidc
+      - run: ./mcp-publisher publish
