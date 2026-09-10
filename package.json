@@ -1,5 +1,5 @@
 {
-  "name": "@cvelasquez/mcp-sqlserver",
+  "name": "@cevelas/mcp-sqlserver",
   "version": "3.0.0",
   "mcpName": "io.github.cvelasquez/mcp-sqlserver",
   "description": "MCP server for DBAs running dozens of SQL Server instances: grouped connections, plans, indexes",

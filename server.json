@@ -14,7 +14,7 @@
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
-      "identifier": "@cvelasquez/mcp-sqlserver",
+      "identifier": "@cevelas/mcp-sqlserver",
       "version": "3.0.0",
       "transport": {
         "type": "stdio"

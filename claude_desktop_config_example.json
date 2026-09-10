@@ -2,7 +2,7 @@
   "mcpServers": {
     "sqlserver": {
       "command": "npx",
-      "args": ["-y", "@cvelasquez/mcp-sqlserver"]
+      "args": ["-y", "@cevelas/mcp-sqlserver"]
     }
   }
 }

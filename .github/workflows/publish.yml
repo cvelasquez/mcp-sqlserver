@@ -68,7 +68,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           for i in $(seq 1 30); do
-            if npm view "@cvelasquez/mcp-sqlserver@$VERSION" version >/dev/null 2>&1; then
+            if npm view "@cevelas/mcp-sqlserver@$VERSION" version >/dev/null 2>&1; then
               echo "npm has $VERSION"; exit 0
             fi
             sleep 10

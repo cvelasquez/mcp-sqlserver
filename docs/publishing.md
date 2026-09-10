@@ -31,12 +31,12 @@ npm login                     # interactive
 npm publish --access public   # runs the test suite first via prepublishOnly
 ```
 
-Verify: <https://www.npmjs.com/package/@cvelasquez/mcp-sqlserver>
+Verify: <https://www.npmjs.com/package/@cevelas/mcp-sqlserver>
 
 Then confirm the install path a new user takes:
 
 ```bash
-cd $(mktemp -d) && npx -y @cvelasquez/mcp-sqlserver --help
+cd $(mktemp -d) && npx -y @cevelas/mcp-sqlserver --help
 ```
 
 ## 2. Official MCP registry

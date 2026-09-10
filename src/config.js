@@ -197,7 +197,7 @@ export function loadConnections(options = {}) {
       searched: resolved.searched,
       error:
         `${hint}\n\n` +
-        `Create one by running:  npx -y @cvelasquez/mcp-sqlserver --init\n` +
+        `Create one by running:  npx -y @cevelas/mcp-sqlserver --init\n` +
         `or point the server at an existing file with $${ENV_PATH_VAR}.`,
     };
   }

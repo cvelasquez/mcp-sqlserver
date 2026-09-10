@@ -6,7 +6,7 @@
 // porque importan los módulos directamente.
 
 import { spawn, execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, readdirSync } from "node:fs";
+import { mkdtempSync, rmSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import assert from "node:assert/strict";
@@ -131,7 +131,10 @@ try {
   run(npm, ["init", "-y"], work);
   run(npm, ["install", "--no-audit", "--no-fund", tarball], work);
 
-  const installed = join(work, "node_modules", "@cvelasquez", "mcp-sqlserver", "index.js");
+  // El nombre sale de package.json: escrito a mano acá, un cambio de scope
+  // rompe el smoke test en vez de que el smoke test lo detecte.
+  const pkgName = JSON.parse(readFileSync(join(repo, "package.json"), "utf-8")).name;
+  const installed = join(work, "node_modules", ...pkgName.split("/"), "index.js");
 
   // Sin archivo de conexiones y sin variables, el servidor tiene que arrancar
   // igual: si muere acá, el cliente MCP solo muestra "server disconnected".

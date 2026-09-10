@@ -1,6 +1,6 @@
 # SQL Server MCP for people who manage dozens of instances
 
-[![npm](https://img.shields.io/npm/v/@cvelasquez/mcp-sqlserver.svg)](https://www.npmjs.com/package/@cvelasquez/mcp-sqlserver)
+[![npm](https://img.shields.io/npm/v/@cevelas/mcp-sqlserver.svg)](https://www.npmjs.com/package/@cevelas/mcp-sqlserver)
 [![CI](https://github.com/cvelasquez/mcp-sqlserver/actions/workflows/ci.yml/badge.svg)](https://github.com/cvelasquez/mcp-sqlserver/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
@@ -23,7 +23,7 @@ Add this to your AI agent's MCP configuration:
   "mcpServers": {
     "sqlserver": {
       "command": "npx",
-      "args": ["-y", "@cvelasquez/mcp-sqlserver"]
+      "args": ["-y", "@cevelas/mcp-sqlserver"]
     }
   }
 }
@@ -32,7 +32,7 @@ Add this to your AI agent's MCP configuration:
 Then create your connections file and restart the agent:
 
 ```bash
-npx -y @cvelasquez/mcp-sqlserver --init
+npx -y @cevelas/mcp-sqlserver --init
 ```
 
 That writes `~/.mcp-sqlserver/connections.json` from a commented template. Edit
@@ -45,7 +45,7 @@ it, and ask your agent to *"list all SQL Server connections"*.
 |---|---|
 | Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
 | Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Claude Code | `claude mcp add sqlserver -- npx -y @cvelasquez/mcp-sqlserver` |
+| Claude Code | `claude mcp add sqlserver -- npx -y @cevelas/mcp-sqlserver` |
 | VS Code / Copilot | `.vscode/mcp.json` |
 | Cursor | `~/.cursor/mcp.json` |
 
@@ -128,7 +128,7 @@ config, which keeps credentials in one place with the rest of your MCP secrets:
   "mcpServers": {
     "sqlserver": {
       "command": "npx",
-      "args": ["-y", "@cvelasquez/mcp-sqlserver"],
+      "args": ["-y", "@cevelas/mcp-sqlserver"],
       "env": {
         "MSSQL_MCP_CONNECTIONS_JSON": "{\"connections\":[{\"name\":\"prod\",\"server\":\"10.0.0.1\",\"database\":\"App\",\"user\":\"reader\",\"password\":\"...\"}]}"
       }
