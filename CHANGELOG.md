@@ -12,9 +12,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 > From this release on, entries are written in English to match the rest of the
 > documentation. Older entries are left as they were published.
 
-Published to npm as **`@cvelasquez/mcp-sqlserver`**. The unscoped
-`mcp-sqlserver` name on npm belongs to an unrelated package that was
-unpublished in 2025 and cannot be reused.
+Published to npm as **`@cevelas/mcp-sqlserver`**. Two names were not available:
+the unscoped `mcp-sqlserver` belongs to an unrelated package that was
+unpublished in 2025 and cannot be reused, and the npm account `cvelasquez`
+belongs to someone else. The MCP registry name stays
+`io.github.cvelasquez/mcp-sqlserver`, which is derived from the GitHub account
+and is unaffected.
 
 ### Fixed
 
@@ -91,7 +94,7 @@ unpublished in 2025 and cannot be reused.
 
 ### Added
 
-- **Install with one line.** `npx -y @cvelasquez/mcp-sqlserver` — no clone, no
+- **Install with one line.** `npx -y @cevelas/mcp-sqlserver` — no clone, no
   `npm install`, no absolute paths in the agent config.
 - **`--init`** writes a starter `~/.mcp-sqlserver/connections.json`.
 - **Connections file resolution**: `--connections`, `$MSSQL_MCP_CONNECTIONS`,
