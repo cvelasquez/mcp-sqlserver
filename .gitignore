@@ -8,6 +8,10 @@ connections*.json
 dist/
 *.mcpb
 
+# CLI del registro MCP, se descarga cuando se necesita
+mcp-publisher
+mcp-publisher.exe
+
 # Node modules
 node_modules/
 
