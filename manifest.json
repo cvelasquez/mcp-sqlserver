@@ -37,7 +37,7 @@
     "connections_file": {
       "type": "file",
       "title": "connections.json",
-      "description": "File describing every SQL Server you want the agent to reach. See connections.template.json in the repository for the format.",
+      "description": "Path to your connections.json — the file describing every SQL Server you want the agent to reach. See connections.template.json in the repository, or run the server once with --init to generate one.",
       "required": true
     }
   },
