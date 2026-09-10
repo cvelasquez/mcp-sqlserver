@@ -13,13 +13,21 @@
   "documentation": "https://github.com/cvelasquez/mcp-sqlserver#readme",
   "support": "https://github.com/cvelasquez/mcp-sqlserver/issues",
   "license": "MIT",
-  "keywords": ["sql-server", "mssql", "database", "dba", "execution-plan"],
+  "keywords": [
+    "sql-server",
+    "mssql",
+    "database",
+    "dba",
+    "execution-plan"
+  ],
   "server": {
     "type": "node",
     "entry_point": "index.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/index.js"],
+      "args": [
+        "${__dirname}/index.js"
+      ],
       "env": {
         "MSSQL_MCP_CONNECTIONS": "${user_config.connections_file}"
       }
@@ -33,15 +41,6 @@
       "required": true
     }
   },
-  "tools": [
-    { "name": "list_connections", "description": "List all available SQL Server connections grouped by connectionGroup" },
-    { "name": "reload_connections", "description": "Reload connections.json without restarting the MCP server" },
-    { "name": "query", "description": "Execute a SQL query on the database" },
-    { "name": "get_schema", "description": "Get database schema information for specific tables" },
-    { "name": "get_indexes", "description": "Get index information for a table" },
-    { "name": "get_execution_plan", "description": "Get execution plan for a query" },
-    { "name": "get_stored_procedure", "description": "Get stored procedure definition" }
-  ],
   "compatibility": {
     "runtimes": {
       "node": ">=18.0.0"
