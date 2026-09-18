@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "mcp-sqlserver",
   "display_name": "SQL Server MCP",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "MCP server for DBAs running dozens of SQL Server instances: grouped connections, plans, indexes",
   "long_description": "One MCP entry for every SQL Server you administer. Connections live in a single connections.json grouped by client or environment, hot-reloaded without restarting the agent. Every response says which server and database answered it. Beyond running queries it returns execution plans, index layouts and stored-procedure source, so an agent can actually diagnose a slow query instead of guessing.",
   "author": {

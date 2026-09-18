@@ -3,7 +3,7 @@
   "name": "io.github.cvelasquez/mcp-sqlserver",
   "title": "SQL Server MCP",
   "description": "MCP server for DBAs running dozens of SQL Server instances: grouped connections, plans, indexes",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "websiteUrl": "https://github.com/cvelasquez/mcp-sqlserver",
   "repository": {
     "url": "https://github.com/cvelasquez/mcp-sqlserver",
@@ -15,7 +15,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@cevelas/mcp-sqlserver",
-      "version": "3.0.0",
+      "version": "3.0.1",
       "transport": {
         "type": "stdio"
       },

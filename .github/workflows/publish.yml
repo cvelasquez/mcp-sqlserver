@@ -2,7 +2,8 @@ name: Publish
 
 # Se dispara con un tag vX.Y.Z. Publica a npm con procedencia (el badge de
 # "Provenance" en npm sale de acá) y después registra la versión en el
-# registro oficial de MCP usando OIDC, sin tokens de larga vida.
+# registro oficial de MCP. Los dos pasos usan OIDC: npm confía en este repo y
+# este workflow como "trusted publisher", así que no hay tokens de larga vida.
 on:
   push:
     tags: ['v*']
@@ -28,9 +29,9 @@ jobs:
           TAG="${GITHUB_REF_NAME#v}"
           PKG=$(node -p "require('./package.json').version")
           test "$TAG" = "$PKG" || { echo "tag $TAG != package.json $PKG"; exit 1; }
+      # Trusted publishing (OIDC) necesita npm >= 11.5.1; Node 22 trae 10.x.
+      - run: npm install -g npm@latest
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   mcpb:
     runs-on: ubuntu-latest

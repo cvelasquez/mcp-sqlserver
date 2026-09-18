@@ -7,6 +7,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [3.0.1] - 2026-09-17
+
+### Changed
+
+- The release workflow publishes to npm through trusted publishing (OIDC)
+  instead of a stored token. No changes to the server itself.
+
 ## [3.0.0] - 2026-09-09
 
 > From this release on, entries are written in English to match the rest of the
