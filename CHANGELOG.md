@@ -7,6 +7,52 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [3.1.0] - 2026-09-18
+
+Everything here is additive: no tool was renamed and no argument changed
+meaning. The one thing an existing setup will notice is the row cap.
+
+### Added
+
+- **`query` caps results at 1000 rows**, across all result sets. The new
+  optional `maxRows` argument changes that, up to 10000. When the cap is hit
+  the query is cancelled on the server rather than trimmed afterwards.
+  `rowCount` is always present.
+- **A truncated response opens with the warning**, before the rows:
+  `truncated: true`, the cap that applied, and a note saying that more rows
+  exist, that the total is unknown, and to run `COUNT(*)` for it. A `maxRows`
+  above 10000 is lowered to 10000 rather than rejected, and when that leaves
+  rows out the note names the value that was asked for.
+- **`format: "csv"` on `query`.** One JSON header line with the metadata, a
+  blank line, then RFC 4180 CSV. Much smaller than JSON for wide results.
+  `NULL` is an empty cell, an empty string is `""`.
+- **Server messages in `messages`**: `PRINT` output and `SET STATISTICS IO,
+  TIME ON` results, which used to be dropped.
+- **`--check`** connects to every connection in parallel, runs `SELECT 1`,
+  reports the ones that fail and exits non-zero if any did.
+- **Tool annotations.** The five tools that only read declare
+  `readOnlyHint`, and `reload_connections` declares itself non-destructive, so
+  clients that honour annotations stop asking for confirmation on them.
+  `query` declares nothing: whether it writes depends on the SQL.
+
+### Fixed
+
+- **Only the first result set came back.** A batch with several `SELECT`s now
+  returns all of them in `recordsets`; `data` is still the first.
+- **`varbinary` columns were serialised as a JSON array with one number per
+  byte.** They are now hex, truncated after 64 bytes with the full length
+  noted.
+- A statement with no result set returned no `data` key at all. It is now an
+  empty array.
+
+### Changed
+
+- Responses are compact JSON instead of two-space indented. Same content,
+  25% smaller on a wide 500-row result and more on narrow ones; `format: "csv"`
+  takes the same result down by 68%.
+- When a batch raises several errors, the message lists all of them instead of
+  only the last, which was often the least useful one.
+
 ## [3.0.1] - 2026-09-17
 
 ### Changed

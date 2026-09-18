@@ -11,18 +11,20 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createSqlServer } from "./src/server.js";
-import { PACKAGE_ROOT, userConfigPath, ENV_PATH_VAR, ENV_INLINE_VAR } from "./src/config.js";
+import { checkConnections, renderCheck } from "./src/check.js";
+import { loadConnections, PACKAGE_ROOT, userConfigPath, ENV_PATH_VAR, ENV_INLINE_VAR } from "./src/config.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf-8"));
 
 function parseArgs(argv) {
-  const opts = { connections: null, init: false, help: false, version: false };
+  const opts = { connections: null, init: false, check: false, help: false, version: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--connections" || arg === "-c") opts.connections = argv[++i];
     else if (arg.startsWith("--connections=")) opts.connections = arg.slice("--connections=".length);
     else if (arg === "--init") opts.init = true;
+    else if (arg === "--check") opts.check = true;
     else if (arg === "--help" || arg === "-h") opts.help = true;
     else if (arg === "--version" || arg === "-v") opts.version = true;
   }
@@ -39,6 +41,7 @@ Usage:
 Options:
   -c, --connections <path>  Path to connections.json
       --init                Create a starter connections.json and exit
+      --check               Try every connection, report the ones that fail, and exit
   -v, --version             Print version and exit
   -h, --help                Show this help
 
@@ -74,6 +77,24 @@ function runInit(targetPath) {
   return 0;
 }
 
+// Sale con 1 si algo no anda, así sirve en un script o una tarea programada.
+async function runCheck(cliPath) {
+  const state = loadConnections({ cliPath });
+  let failed = 0;
+
+  if (state.path) console.log(`Connections file: ${state.path}\n`);
+  if (state.connections.length > 0) {
+    const results = await checkConnections({ driver: sql, connections: state.connections });
+    failed = results.filter((r) => !r.ok).length;
+    console.log(renderCheck(results));
+  }
+  // Acá caen las conexiones deshabilitadas por una variable de entorno sin
+  // definir: no se pueden probar, pero tampoco están bien.
+  if (state.error) console.log(`\n${state.error}`);
+
+  return failed > 0 || state.error ? 1 : 0;
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
 
@@ -82,6 +103,7 @@ async function main() {
   if (opts.help) { console.log(HELP); return 0; }
   if (opts.version) { console.log(pkg.version); return 0; }
   if (opts.init) return runInit(opts.connections);
+  if (opts.check) return runCheck(opts.connections);
 
   const { server, pools, getState } = createSqlServer({
     driver: sql,

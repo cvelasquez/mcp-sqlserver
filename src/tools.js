@@ -5,6 +5,14 @@
 // congela para que un refactor no los mueva sin que nos enteremos.
 
 import { assertReadOnly, isReadOnly } from "./readonly.js";
+import { runQuery, resolveMaxRows, truncationNote, DEFAULT_MAX_ROWS, MAX_ROWS_LIMIT } from "./query.js";
+import { normalizeRows, toCsv } from "./format.js";
+
+const FORMATS = ["json", "csv"];
+
+// Los clientes MCP leen estas anotaciones para decidir si piden confirmación.
+// `query` no lleva ninguna: si escribe o no depende de la conexión y del SQL.
+const READ_ONLY = { readOnlyHint: true };
 
 export const TOOL_DEFINITIONS = [
   {
@@ -14,6 +22,7 @@ export const TOOL_DEFINITIONS = [
       type: "object",
       properties: {},
     },
+    annotations: READ_ONLY,
   },
   {
     name: "reload_connections",
@@ -23,6 +32,9 @@ export const TOOL_DEFINITIONS = [
       type: "object",
       properties: {},
     },
+    // Cambia el estado del servidor, pero no rompe nada y se puede repetir.
+    // Sin declararlo, destructiveHint vale true por defecto.
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   },
   {
     name: "query",
@@ -32,6 +44,23 @@ export const TOOL_DEFINITIONS = [
       properties: {
         connection: { type: "string", description: "Connection name to use" },
         sql: { type: "string", description: "SQL query to execute" },
+        maxRows: {
+          type: "integer",
+          minimum: 1,
+          maximum: MAX_ROWS_LIMIT,
+          description:
+            `Maximum rows to return across all result sets (default ${DEFAULT_MAX_ROWS}, max ${MAX_ROWS_LIMIT}). ` +
+            "When the cap is hit the query is cancelled on the server and the response starts with truncated: true. " +
+            "A truncated result is incomplete and the total row count is unknown: never report the cap as the number of rows. " +
+            "Prefer TOP, WHERE or aggregates over raising this.",
+        },
+        format: {
+          type: "string",
+          enum: FORMATS,
+          description:
+            "Output format (default json). csv is far more compact for wide or long results: " +
+            "the first line is a JSON header with metadata, then the rows as CSV.",
+        },
       },
       required: ["connection", "sql"],
     },
@@ -47,6 +76,7 @@ export const TOOL_DEFINITIONS = [
       },
       required: ["connection"],
     },
+    annotations: READ_ONLY,
   },
   {
     name: "get_indexes",
@@ -59,6 +89,7 @@ export const TOOL_DEFINITIONS = [
       },
       required: ["connection", "table"],
     },
+    annotations: READ_ONLY,
   },
   {
     name: "get_execution_plan",
@@ -71,6 +102,7 @@ export const TOOL_DEFINITIONS = [
       },
       required: ["connection", "sql"],
     },
+    annotations: READ_ONLY,
   },
   {
     name: "get_stored_procedure",
@@ -83,6 +115,7 @@ export const TOOL_DEFINITIONS = [
       },
       required: ["connection", "name"],
     },
+    annotations: READ_ONLY,
   },
 ];
 
@@ -90,8 +123,11 @@ function text(payload) {
   return { content: [{ type: "text", text: payload }] };
 }
 
+// Compacto a propósito: la indentación no le sirve a quien lo lee, que es un
+// modelo. Medido sobre 500 filas de sys.all_objects: 210 KB indentado, 157 KB
+// compacto, 66 KB en csv.
 function json(payload) {
-  return text(JSON.stringify(payload, null, 2));
+  return text(JSON.stringify(payload));
 }
 
 function failure(message) {
@@ -193,9 +229,20 @@ export function createToolHandler({ pools, getState, reload }) {
       // baranda de readOnly (String({...}) es "[object Object]") y aun así se
       // ejecuta, porque mssql lo interpreta como tagged template y corre
       // strings[0]. Los tipos se verifican antes de tocar nada.
-      for (const field of ["sql", "table", "name"]) {
+      for (const field of ["sql", "table", "name", "format"]) {
         if (field in args && args[field] !== undefined && typeof args[field] !== "string") {
           throw new Error(`Parameter '${field}' must be a string`);
+        }
+      }
+
+      // Igual que lo anterior: se valida antes de abrir la conexión.
+      let maxRows;
+      let format;
+      if (name === "query") {
+        maxRows = resolveMaxRows(args.maxRows);
+        format = args.format ?? "json";
+        if (!FORMATS.includes(format)) {
+          throw new Error(`Parameter 'format' must be one of: ${FORMATS.join(", ")}`);
         }
       }
 
@@ -210,11 +257,43 @@ export function createToolHandler({ pools, getState, reload }) {
 
       switch (name) {
         case "query": {
-          const result = await pool.query(args.sql);
-          return json({
+          const result = await runQuery(pool, args.sql, { maxRows });
+          const recordsets = result.recordsets.map(normalizeRows);
+
+          // Todo lo que describe el resultado va ANTES de las filas, y el aviso
+          // de truncado primero. Una respuesta de 10000 filas pesa cientos de
+          // KB: si el cliente recorta la salida se queda con el principio, y
+          // con el aviso al final el agente creería que vio el resultado entero.
+          //
+          // Los campos opcionales solo aparecen cuando dicen algo: en la
+          // consulta común, que entra entera, la respuesta no crece.
+          const head = {
             metadata,
-            data: result.recordset,
+            ...(result.truncated
+              ? { truncated: true, maxRows, note: truncationNote(maxRows, args.maxRows) }
+              : {}),
+            rowCount: result.rowCount,
             rowsAffected: result.rowsAffected?.[0],
+            ...(result.messages.length > 0 ? { messages: result.messages } : {}),
+          };
+
+          if (format === "csv") {
+            const header = JSON.stringify({ ...head, format });
+            const blocks = recordsets.map((rows, i) => toCsv(rows, result.columns[i]));
+            // Un solo bloque de texto: no todos los clientes muestran más de uno.
+            const body =
+              blocks.length > 1
+                ? blocks.map((csv, i) => `-- recordset ${i + 1}\n${csv}`).join("\n\n")
+                : (blocks[0] ?? "");
+            return text(`${header}\n\n${body}`);
+          }
+
+          return json({
+            ...head,
+            // `data` es el primer recordset, como siempre. Los demás antes se
+            // perdían; ahora van en `recordsets` cuando hay más de uno.
+            data: recordsets[0] ?? [],
+            ...(recordsets.length > 1 ? { recordsets } : {}),
           });
         }
 

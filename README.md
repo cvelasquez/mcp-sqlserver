@@ -151,6 +151,16 @@ In order, first hit wins:
 A path given explicitly via 1 or 2 that does not exist is an error — the server
 will not quietly fall back to a different file and talk to the wrong database.
 
+### Checking every connection at once
+
+```bash
+npx -y @cevelas/mcp-sqlserver --check
+```
+
+Connects to every entry in parallel, runs `SELECT 1`, and lists which ones
+fail and why. Exits non-zero if any did, so it works in a scheduled task.
+Useful after a password rotation, or before blaming the agent.
+
 ### Windows domain and Entra ID authentication
 
 The bundled `tedious` driver supports NTLM and the Entra ID (Azure AD) family.
@@ -191,7 +201,7 @@ explicit service account is the supported path.
 |---|---|---|
 | `list_connections` | — | Every connection, grouped |
 | `reload_connections` | — | Re-read the file, drop open pools |
-| `query` | `connection`, `sql` | Run a query |
+| `query` | `connection`, `sql`, `maxRows?`, `format?` | Run a query |
 | `get_schema` | `connection`, `table?` | Columns, types, nullability, defaults |
 | `get_indexes` | `connection`, `table` | Indexes, types, key and included columns |
 | `get_execution_plan` | `connection`, `sql` | `SHOWPLAN_XML` — the plan, without running the query |
@@ -214,6 +224,36 @@ Every response carries the connection it came from:
 
 With thirty connections in play, that line is what tells you the answer came
 from the client you meant.
+
+### Query results that fit in a context window
+
+An agent that runs `SELECT * FROM Orders` does not need four million rows, and
+neither does its context window.
+
+- **Row cap.** `query` returns at most 1000 rows across all result sets.
+  `maxRows` changes that, up to 10000. When the cap is hit the query is
+  *cancelled on the server*, not trimmed afterwards.
+- **A truncated result says so, first.** The response opens with
+  `"truncated": true` and a note stating that more rows exist, that the total
+  is unknown, and how to get it. It sits *before* the rows on purpose: a
+  10000-row response runs to hundreds of KB, and a client that cuts long output
+  keeps the beginning. An agent must never conclude "the table has 10000 rows"
+  from a capped result. Asking for more than 10000 is not an error — the cap is
+  lowered to 10000, and if rows were left out the note says what was asked for.
+- **`format: "csv"`.** JSON repeats every column name on every row. With
+  `csv` the response is one JSON header line with the metadata, a blank line,
+  then the rows. `NULL` is an empty cell and an empty string is `""`, so the
+  two stay distinguishable.
+- **Server messages.** `PRINT` output and `SET STATISTICS IO, TIME ON` results
+  come back in `messages`, so the agent can read logical reads and CPU time
+  instead of guessing.
+- **Every result set.** A batch with several `SELECT`s returns them all in
+  `recordsets`. `data` is still the first one.
+- **Binary columns** come back as hex (`0x8f3a...`), truncated after 64 bytes,
+  instead of a JSON array with one number per byte.
+
+`rowCount` is always present; `truncated`, `messages` and `recordsets` only
+appear when they have something to say. Responses are compact JSON.
 
 ### What this gets you
 

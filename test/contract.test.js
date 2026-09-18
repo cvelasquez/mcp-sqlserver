@@ -7,6 +7,9 @@ import { TOOL_DEFINITIONS } from "../src/tools.js";
 // antes del refactor: hay clientes configurados contra estos nombres y estos
 // parámetros. Si un cambio rompe este test, o es un bug o es una versión mayor
 // con su nota en el CHANGELOG — nunca un descuido.
+//
+// 3.1.0 agregó `maxRows` y `format` a `query`. Los dos son opcionales: un
+// cliente que no los manda recibe lo mismo que antes, salvo el tope de filas.
 const FROZEN = [
   {
     name: "get_execution_plan",
@@ -41,7 +44,7 @@ const FROZEN = [
   {
     name: "query",
     required: ["connection", "sql"],
-    properties: ["connection", "sql"],
+    properties: ["connection", "format", "maxRows", "sql"],
     description: "Execute a SQL query on the database",
   },
   {
@@ -77,7 +80,7 @@ test("toda herramienta declara un inputSchema de objeto", () => {
 test("toda propiedad tiene tipo y descripción", () => {
   for (const tool of TOOL_DEFINITIONS) {
     for (const [prop, schema] of Object.entries(tool.inputSchema.properties ?? {})) {
-      assert.equal(schema.type, "string", `${tool.name}.${prop}`);
+      assert.ok(["string", "integer"].includes(schema.type), `${tool.name}.${prop} es ${schema.type}`);
       assert.ok(schema.description, `${tool.name}.${prop} sin descripción`);
     }
   }
@@ -89,4 +92,36 @@ test("todo parámetro requerido está declarado en properties", () => {
       assert.ok(tool.inputSchema.properties?.[req], `${tool.name} requiere ${req} pero no lo declara`);
     }
   }
+});
+
+// Los clientes usan readOnlyHint para decidir si piden confirmación. Marcar
+// `query` como de solo lectura sería mentir: depende de la conexión y del SQL.
+test("las herramientas que solo leen lo declaran, y query no", () => {
+  const readOnly = TOOL_DEFINITIONS.filter((t) => t.annotations?.readOnlyHint === true).map((t) => t.name).sort();
+  assert.deepEqual(readOnly, [
+    "get_execution_plan",
+    "get_indexes",
+    "get_schema",
+    "get_stored_procedure",
+    "list_connections",
+  ]);
+
+  const query = TOOL_DEFINITIONS.find((t) => t.name === "query");
+  assert.notEqual(query.annotations?.readOnlyHint, true);
+});
+
+// Sin esto el cliente asume lo peor (destructiveHint es true por defecto) y
+// pide confirmación para algo que solo relee un archivo.
+test("reload_connections no es de solo lectura, pero tampoco destructiva", () => {
+  const reload = TOOL_DEFINITIONS.find((t) => t.name === "reload_connections");
+  assert.equal(reload.annotations?.readOnlyHint, false);
+  assert.equal(reload.annotations?.destructiveHint, false);
+});
+
+test("maxRows y format declaran sus límites en el schema", () => {
+  const { maxRows, format } = TOOL_DEFINITIONS.find((t) => t.name === "query").inputSchema.properties;
+  assert.equal(maxRows.type, "integer");
+  assert.equal(maxRows.minimum, 1);
+  assert.equal(maxRows.maximum, 10000);
+  assert.deepEqual(format.enum, ["json", "csv"]);
 });
