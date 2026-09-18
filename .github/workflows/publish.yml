@@ -48,8 +48,12 @@ jobs:
       # mcpb no respeta .gitignore: sin este chequeo un connections.json puede
       # terminar dentro de un release público.
       - run: node .github/scripts/check-bundle.mjs mcp-sqlserver.mcpb
+      # Un tag empujado desde la terminal no trae release; uno creado desde la
+      # web de GitHub sí. Cubrimos los dos casos.
       - name: Attach the bundle to the release
-        run: gh release upload "$GITHUB_REF_NAME" mcp-sqlserver.mcpb --clobber
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1             || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" mcp-sqlserver.mcpb --clobber
         env:
           GH_TOKEN: ${{ github.token }}
 
