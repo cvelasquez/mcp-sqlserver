@@ -150,8 +150,7 @@ mcp-sqlserver/
 ├── connections.template.json     # Template de ejemplo
 ├── manifest.json                 # Bundle .mcpb (Claude Desktop, Smithery)
 ├── server.json                   # Registro oficial de MCP
-├── glama.json                    # Directorio Glama
-└── docs/publishing.md            # Pasos de publicación
+└── glama.json                    # Directorio Glama
 ```
 
 ### Tests

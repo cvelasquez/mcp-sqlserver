@@ -12,6 +12,10 @@ dist/
 mcp-publisher
 mcp-publisher.exe
 
+# Notas de trabajo internas, no son documentación del repo
+CLAUDE.md
+docs/
+
 # Node modules
 node_modules/
 
