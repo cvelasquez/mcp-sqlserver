@@ -7,6 +7,33 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [3.2.0] - 2026-10-12
+
+Node.js 22 is now the minimum. Nothing else changes: same tools, same
+arguments, same `connections.json`.
+
+### Changed
+
+- **Node.js 22 or newer is required**, up from 18. The current SQL Server
+  driver (`tedious` 20) needs it, and Node.js 18 and 20 are past end of life.
+  An `npx` install on an older Node.js is not cut off: npm resolves an older
+  driver that still runs there. That combination is no longer tested.
+- The `.mcpb` bundle ships the current driver, so it needs Node.js 22.
+
+### Fixed
+
+- **A driver that cannot run on the current Node.js now says so.** The bundle,
+  or an install made with one Node.js and run with an older one, used to fail
+  on the first query with `Promise.withResolvers is not a function`. Every
+  tool that connects now returns the reason with the versions involved, and
+  `list_connections` and `--check` report it too. The server still starts.
+
+### Security
+
+- `@modelcontextprotocol/sdk` 1.32 and `mssql` 12.7. The versions pinned in
+  the 3.1.0 bundle had 13 known advisories, one of them critical; `npm audit`
+  now reports none.
+
 ## [3.1.0] - 2026-09-18
 
 Everything here is additive: no tool was renamed and no argument changed

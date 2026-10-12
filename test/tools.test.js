@@ -25,12 +25,13 @@ const CONNECTIONS = [
   },
 ];
 
-function harness({ onCall, connections = CONNECTIONS, error = null } = {}) {
+function harness({ onCall, connections = CONNECTIONS, error = null, runtimeError = null } = {}) {
   const driver = createFakeDriver({ onCall });
   const pools = createPoolManager({ driver, connections });
   let state = { connections, path: "/tmp/connections.json", source: "current directory", error };
   const callTool = createToolHandler({
     pools,
+    runtimeError,
     getState: () => state,
     // Igual que src/server.js: cerrar los pools es parte de recargar.
     reload: async () => {
@@ -210,6 +211,31 @@ test("list_connections explica el problema en vez de devolver una lista vacía",
   const out = (await callTool("list_connections", {})).content[0].text;
   assert.match(out, /No connections are loaded/);
   assert.match(out, /Looked in/);
+});
+
+const OLD_NODE = "The SQL Server driver installed with this server (tedious 20.3.7) needs Node.js >=22, and it is running on Node.js 20.19.0.";
+
+test("si el driver no corre en este Node, lo que conecta devuelve el motivo y no abre ningún pool", async () => {
+  const { driver, callTool } = harness({ runtimeError: OLD_NODE });
+
+  for (const [name, args] of [
+    ["query", { connection: "prod", sql: "SELECT 1" }],
+    ["get_schema", { connection: "prod" }],
+    ["get_execution_plan", { connection: "prod", sql: "SELECT 1" }],
+  ]) {
+    const res = await callTool(name, args);
+    assert.equal(res.isError, true, name);
+    assert.equal(res.content[0].text, `Error: ${OLD_NODE}`, name);
+  }
+  assert.equal(driver.pools.length, 0, "no tiene que llegar al driver");
+});
+
+test("si el driver no corre en este Node, list_connections lo dice antes de la lista", async () => {
+  const { callTool } = harness({ runtimeError: OLD_NODE });
+  const out = (await callTool("list_connections", {})).content[0].text;
+
+  assert.ok(out.startsWith(OLD_NODE), out);
+  assert.ok(out.includes("- prod\n"), "la lista tiene que seguir saliendo");
 });
 
 test("reload_connections cierra los pools y reporta el resultado", async () => {

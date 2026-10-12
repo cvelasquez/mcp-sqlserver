@@ -3,7 +3,7 @@
 [![npm](https://img.shields.io/npm/v/@cevelas/mcp-sqlserver.svg)](https://www.npmjs.com/package/@cevelas/mcp-sqlserver)
 [![CI](https://github.com/cvelasquez/mcp-sqlserver/actions/workflows/ci.yml/badge.svg)](https://github.com/cvelasquez/mcp-sqlserver/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22%2B-green.svg)](https://nodejs.org/)
 [![MCP](https://img.shields.io/badge/MCP-compatible-blue.svg)](https://modelcontextprotocol.io/)
 
 One MCP entry, every SQL Server you administer. Connections live in a single
@@ -37,6 +37,8 @@ npx -y @cevelas/mcp-sqlserver --init
 
 That writes `~/.mcp-sqlserver/connections.json` from a commented template. Edit
 it, and ask your agent to *"list all SQL Server connections"*.
+
+Needs Node.js 22 or newer.
 
 <details>
 <summary>Where each agent keeps its MCP config</summary>

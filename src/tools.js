@@ -165,22 +165,26 @@ function renderConnectionList(connections) {
  * @param {object} ctx.pools  pool manager (src/pools.js)
  * @param {() => object} ctx.getState  { connections, path, source, error }
  * @param {() => Promise<object>} ctx.reload
+ * @param {string|null} [ctx.runtimeError]  por qué el driver no corre en este Node (src/runtime.js)
  */
-export function createToolHandler({ pools, getState, reload }) {
+export function createToolHandler({ pools, getState, reload, runtimeError = null }) {
   return async function callTool(name, args = {}) {
     try {
       if (name === "list_connections") {
         const state = getState();
+        // Si el driver no corre en este Node ninguna conexión va a andar: va primero.
+        const blocker = runtimeError ? `${runtimeError}\n\n` : "";
         if (state.connections.length === 0) {
           // Es el primer lugar donde alguien mira cuando "no anda". Si la
           // configuración no cargó, acá va el motivo, no una lista vacía.
           return text(
-            state.error
-              ? `No connections are loaded.\n\n${state.error}`
-              : "Available SQL Server Connections:\n\n"
+            blocker +
+              (state.error
+                ? `No connections are loaded.\n\n${state.error}`
+                : "Available SQL Server Connections:\n\n")
           );
         }
-        let output = renderConnectionList(state.connections);
+        let output = blocker + renderConnectionList(state.connections);
         if (state.path) output += `Loaded from: ${state.path}\n`;
         if (state.error) output += `\nWarnings:\n${state.error}\n`;
         return text(output);
@@ -251,6 +255,9 @@ export function createToolHandler({ pools, getState, reload }) {
       if (name === "query" && isReadOnly(connConfig)) {
         assertReadOnly(args.sql, args.connection);
       }
+
+      // El driver fallaría igual, pero con un error que no explica nada.
+      if (runtimeError) throw new Error(runtimeError);
 
       // get_execution_plan trabaja sobre su propio pool dedicado.
       const pool = name === "get_execution_plan" ? null : await pools.get(args.connection);

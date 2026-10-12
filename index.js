@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { createSqlServer } from "./src/server.js";
 import { checkConnections, renderCheck } from "./src/check.js";
 import { loadConnections, PACKAGE_ROOT, userConfigPath, ENV_PATH_VAR, ENV_INLINE_VAR } from "./src/config.js";
+import { unsupportedNode } from "./src/runtime.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf-8"));
@@ -79,6 +80,14 @@ function runInit(targetPath) {
 
 // Sale con 1 si algo no anda, así sirve en un script o una tarea programada.
 async function runCheck(cliPath) {
+  // Si el driver no corre en este Node fallarían todas, y por un motivo que
+  // no es de ninguna.
+  const runtimeError = unsupportedNode();
+  if (runtimeError) {
+    console.log(runtimeError);
+    return 1;
+  }
+
   const state = loadConnections({ cliPath });
   let failed = 0;
 
@@ -105,10 +114,12 @@ async function main() {
   if (opts.init) return runInit(opts.connections);
   if (opts.check) return runCheck(opts.connections);
 
+  const runtimeError = unsupportedNode();
   const { server, pools, getState } = createSqlServer({
     driver: sql,
     version: pkg.version,
     loadOptions: { cliPath: opts.connections },
+    runtimeError,
   });
 
   const transport = new StdioServerTransport();
@@ -116,6 +127,9 @@ async function main() {
 
   const state = getState();
   console.error(`${pkg.name} v${pkg.version} running on stdio`);
+  // Mismo criterio que con la configuración: arrancar y avisar por las
+  // herramientas, que es donde el usuario llega a verlo.
+  if (runtimeError) console.error(runtimeError);
   if (state.error && state.connections.length === 0) {
     // Arrancar igual y reportar por la herramienta: si el proceso muere acá,
     // el cliente MCP solo muestra "server disconnected" y nadie sabe por qué.

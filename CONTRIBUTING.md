@@ -37,7 +37,7 @@ Comportamiento actual:
 Error: Connection timeout
 
 Versión: 2.0.0
-Ambiente: Windows 11, Node.js 18.0.0, SQL Server 2019
+Ambiente: Windows 11, Node.js 22.14.0, SQL Server 2019
 ```
 
 ### Sugerir Mejoras

@@ -15,8 +15,9 @@ export const SERVER_NAME = "mssql-server";
  * @param {string} options.version
  * @param {object} [options.loadOptions]   opciones para loadConnections()
  * @param {Function} [options.load]        inyectable en tests
+ * @param {string|null} [options.runtimeError]  por qué el driver no corre en este Node (src/runtime.js)
  */
-export function createSqlServer({ driver, version, loadOptions = {}, load = loadConnections }) {
+export function createSqlServer({ driver, version, loadOptions = {}, load = loadConnections, runtimeError = null }) {
   let state = load(loadOptions);
 
   const pools = createPoolManager({ driver, connections: state.connections });
@@ -33,7 +34,7 @@ export function createSqlServer({ driver, version, loadOptions = {}, load = load
     return { ...state, closedPools: closed.length };
   }
 
-  const callTool = createToolHandler({ pools, getState, reload });
+  const callTool = createToolHandler({ pools, getState, reload, runtimeError });
 
   const server = new Server(
     { name: SERVER_NAME, version },

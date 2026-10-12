@@ -1,6 +1,6 @@
 {
   "name": "@cevelas/mcp-sqlserver",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "mcpName": "io.github.cvelasquez/mcp-sqlserver",
   "description": "MCP server for DBAs running dozens of SQL Server instances: grouped connections, plans, indexes",
   "type": "module",
@@ -43,7 +43,7 @@
   ],
   "author": {
     "name": "Christian Velasquez Astucuri",
-    "email": "velasquezoracle@gmail.com"
+    "url": "https://github.com/cvelasquez"
   },
   "license": "MIT",
   "repository": {
@@ -58,10 +58,10 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.19.1",
-    "mssql": "^12.0.0"
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "mssql": "^12.7.4"
   }
 }
