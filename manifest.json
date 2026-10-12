@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "mcp-sqlserver",
   "display_name": "SQL Server MCP",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "MCP server for DBAs running dozens of SQL Server instances: grouped connections, plans, indexes",
   "long_description": "One MCP entry for every SQL Server you administer. Connections live in a single connections.json grouped by client or environment, hot-reloaded without restarting the agent. Every response says which server and database answered it. Beyond running queries it returns execution plans, index layouts and stored-procedure source, so an agent can actually diagnose a slow query instead of guessing.",
   "author": {
@@ -38,8 +38,8 @@
     "connections_file": {
       "type": "file",
       "title": "connections.json",
-      "description": "Path to your connections.json — the file describing every SQL Server you want the agent to reach. See connections.template.json in the repository, or run the server once with --init to generate one.",
-      "required": true
+      "description": "Path to your connections.json — the file describing every SQL Server you want the agent to reach. Leave it empty to use ~/.mcp-sqlserver/connections.json, which the server creates when run once with --init.",
+      "required": false
     }
   },
   "compatibility": {

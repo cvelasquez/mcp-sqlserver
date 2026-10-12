@@ -23,6 +23,27 @@ export function userConfigPath(home = homedir()) {
   return join(home, ".mcp-sqlserver", "connections.json");
 }
 
+// El bundle .mcpb arma la variable con "${user_config.connections_file}". Si
+// el usuario deja ese campo vacío, ni Claude Desktop ni Smithery reemplazan el
+// marcador: llega el texto literal. El código de referencia de mcpb además
+// pasa los valores por String(), de ahí "undefined" y "null".
+const UNFILLED = /^(\$\{[^}]*\}|undefined|null)$/;
+
+/** ¿La variable viene de un bundle cuyo campo quedó sin llenar? */
+function unfilledBundleField(env) {
+  return UNFILLED.test((env[ENV_PATH_VAR] ?? "").trim());
+}
+
+/**
+ * La ruta que trae la variable, o null si en realidad no trae ninguna. Tomar
+ * el marcador por una ruta daría "no existe el archivo ${user_config...}" en
+ * vez de buscar en los lugares de siempre.
+ */
+function pathFromEnv(env) {
+  const value = (env[ENV_PATH_VAR] ?? "").trim();
+  return value && !UNFILLED.test(value) ? value : null;
+}
+
 /**
  * Orden de búsqueda, de más explícito a más implícito. El último es el
  * comportamiento histórico (connections.json junto a index.js) y se mantiene
@@ -37,9 +58,8 @@ export function candidatePaths({
 } = {}) {
   const candidates = [];
   if (cliPath) candidates.push({ source: "--connections", path: resolvePath(cwd, cliPath) });
-  if (env[ENV_PATH_VAR]) {
-    candidates.push({ source: `$${ENV_PATH_VAR}`, path: resolvePath(cwd, env[ENV_PATH_VAR]) });
-  }
+  const envPath = pathFromEnv(env);
+  if (envPath) candidates.push({ source: `$${ENV_PATH_VAR}`, path: resolvePath(cwd, envPath) });
   candidates.push({ source: "current directory", path: join(cwd, "connections.json") });
   candidates.push({ source: "user config", path: userConfigPath(home) });
   candidates.push({ source: "package directory", path: join(packageRoot, "connections.json") });
@@ -198,7 +218,11 @@ export function loadConnections(options = {}) {
       error:
         `${hint}\n\n` +
         `Create one by running:  npx -y @cevelas/mcp-sqlserver --init\n` +
-        `or point the server at an existing file with $${ENV_PATH_VAR}.`,
+        // A quien instaló el bundle la variable no le dice nada: la ruta se
+        // elige en un formulario.
+        (unfilledBundleField(env)
+          ? `or choose an existing file in this extension's settings.`
+          : `or point the server at an existing file with $${ENV_PATH_VAR}.`),
     };
   }
 

@@ -329,8 +329,9 @@ optional. See [web/README.md](web/README.md).
 
 Grab the `.mcpb` bundle from the
 [latest release](https://github.com/cvelasquez/mcp-sqlserver/releases/latest)
-and drag it onto Claude Desktop's extensions settings. It will ask for the path
-to your `connections.json` and wire everything up.
+and drag it onto Claude Desktop's extensions settings. Point it at your
+`connections.json` in the extension's settings, or leave that empty to use
+`~/.mcp-sqlserver/connections.json`.
 
 ## Upgrading from 2.x
 

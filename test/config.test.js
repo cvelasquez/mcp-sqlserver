@@ -114,6 +114,66 @@ test("una ruta explícita inexistente falla en vez de usar otro archivo", () => 
   }
 });
 
+// El bundle .mcpb arma la variable con "${user_config.connections_file}". Si
+// el usuario deja el campo vacío, ni Claude Desktop ni Smithery reemplazan el
+// marcador y llega el texto tal cual.
+const UNFILLED = ["${user_config.connections_file}", "", "   ", "undefined", "null"];
+
+test("un campo del bundle sin llenar no es una ruta: se busca en los lugares de siempre", () => {
+  const s = sandbox();
+  try {
+    s.write(join(s.home, ".mcp-sqlserver"), [{ ...CONN, server: "user" }]);
+    const opts = { cwd: s.cwd, home: s.home, packageRoot: s.packageRoot };
+
+    for (const value of UNFILLED) {
+      const result = loadConnections({ ...opts, env: { [ENV_PATH_VAR]: value } });
+      assert.equal(result.error, null, `con ${JSON.stringify(value)}: ${result.error}`);
+      assert.equal(result.connections[0].server, "user", `con ${JSON.stringify(value)}`);
+      assert.equal(result.source, "user config");
+    }
+  } finally {
+    s.cleanup();
+  }
+});
+
+test("con el campo del bundle sin llenar y sin archivo, dice dónde elegirlo", () => {
+  const s = sandbox();
+  try {
+    const result = loadConnections({
+      cwd: s.cwd,
+      home: s.home,
+      packageRoot: s.packageRoot,
+      env: { [ENV_PATH_VAR]: "${user_config.connections_file}" },
+    });
+    assert.equal(result.connections.length, 0);
+    assert.match(result.error, /No connections\.json found/);
+    assert.ok(!result.error.includes("user_config"), `el marcador no es una ruta: ${result.error}`);
+    assert.match(result.error, /--init/);
+    assert.match(result.error, /extension's settings/);
+  } finally {
+    s.cleanup();
+  }
+});
+
+test("una ruta de verdad en la variable sigue siendo explícita", () => {
+  const s = sandbox();
+  try {
+    s.write(join(s.home, ".mcp-sqlserver"), [CONN]);
+    const result = loadConnections({
+      cwd: s.cwd,
+      home: s.home,
+      packageRoot: s.packageRoot,
+      // Un nombre con ${} en el medio no es el marcador sin llenar.
+      env: { [ENV_PATH_VAR]: join(s.root, "mis ${conexiones}.json") },
+    });
+    assert.equal(result.connections.length, 0);
+    assert.match(result.error, /No connections file at/);
+    assert.ok(!/extension's settings/.test(result.error));
+  } finally {
+    s.cleanup();
+  }
+});
+
 test("sin ningún archivo devuelve error accionable y no lanza", () => {
   const s = sandbox();
   try {

@@ -7,6 +7,22 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [3.3.0] - 2026-10-12
+
+### Added
+
+- **An icon.** The `.mcpb` bundle carries it, so Claude Desktop shows it next
+  to the extension, and the web UI uses it as its logo and favicon.
+
+### Changed
+
+- **The connections file is optional when installing the `.mcpb` bundle.** It
+  used to be required. Left empty, the server looks in the usual places,
+  starting with `~/.mcp-sqlserver/connections.json`, and `list_connections`
+  says how to create the file if there is none. A launcher passes an empty
+  field as the literal text `${user_config.connections_file}`; that is now
+  read as no path rather than as a file that does not exist.
+
 ## [3.2.0] - 2026-10-12
 
 Node.js 22 is now the minimum. Nothing else changes: same tools, same
