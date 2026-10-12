@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SQL Server Connections Manager</title>
+    <!-- Same drawing as icon.svg in the repository root, inlined so this page stays a single file -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='mcp-icon-body' x1='0' x2='1' y1='0' y2='0'%3E%3Cstop offset='0' stop-color='%23A51D1C'/%3E%3Cstop offset='0.5' stop-color='%23D7302C'/%3E%3Cstop offset='1' stop-color='%23A51D1C'/%3E%3C/linearGradient%3E%3CclipPath id='mcp-icon-inside'%3E%3Cpath d='M96 88V424A160 48 0 0 0 416 424V88Z'/%3E%3C/clipPath%3E%3C/defs%3E%3Cpath d='M96 88V424A160 48 0 0 0 416 424V88Z' fill='url(%23mcp-icon-body)'/%3E%3Cellipse cx='256' cy='88' rx='160' ry='48' fill='%23EF5B56'/%3E%3Cpath d='M96 152A160 48 0 0 0 416 152' fill='none' stroke='%237F1514' stroke-width='10' clip-path='url(%23mcp-icon-inside)'/%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg stroke='%23111827' stroke-width='68'%3E%3Cpath d='M44 386V250L104 336L164 250V386'/%3E%3Cpath d='M311 272.5A66 68 0 1 0 311 363.5'/%3E%3Cpath d='M348 386V250H426A42 42 0 0 1 426 334H348'/%3E%3C/g%3E%3Cg stroke='%23FFFFFF' stroke-width='40'%3E%3Cpath d='M44 386V250L104 336L164 250V386'/%3E%3Cpath d='M311 272.5A66 68 0 1 0 311 363.5'/%3E%3Cpath d='M348 386V250H426A42 42 0 0 1 426 334H348'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -45,9 +47,14 @@
     <header class="bg-blue-600 text-white shadow-lg">
         <div class="container mx-auto px-4 py-6">
             <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold">SQL Server Connections Manager</h1>
-                    <p class="text-blue-100 mt-1">Manage your connections visually</p>
+                <div class="flex items-center gap-4">
+                    <span class="bg-white rounded-xl p-1.5 shadow flex-shrink-0">
+                        <svg class="h-12 w-12" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="mcp-icon-body" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#A51D1C"/><stop offset="0.5" stop-color="#D7302C"/><stop offset="1" stop-color="#A51D1C"/></linearGradient><clipPath id="mcp-icon-inside"><path d="M96 88V424A160 48 0 0 0 416 424V88Z"/></clipPath></defs><path d="M96 88V424A160 48 0 0 0 416 424V88Z" fill="url(#mcp-icon-body)"/><ellipse cx="256" cy="88" rx="160" ry="48" fill="#EF5B56"/><path d="M96 152A160 48 0 0 0 416 152" fill="none" stroke="#7F1514" stroke-width="10" clip-path="url(#mcp-icon-inside)"/><g fill="none" stroke-linecap="round" stroke-linejoin="round"><g stroke="#111827" stroke-width="68"><path d="M44 386V250L104 336L164 250V386"/><path d="M311 272.5A66 68 0 1 0 311 363.5"/><path d="M348 386V250H426A42 42 0 0 1 426 334H348"/></g><g stroke="#FFFFFF" stroke-width="40"><path d="M44 386V250L104 336L164 250V386"/><path d="M311 272.5A66 68 0 1 0 311 363.5"/><path d="M348 386V250H426A42 42 0 0 1 426 334H348"/></g></g></svg>
+                    </span>
+                    <div>
+                        <h1 class="text-3xl font-bold">SQL Server Connections Manager</h1>
+                        <p class="text-blue-100 mt-1">Manage your connections visually</p>
+                    </div>
                 </div>
                 <div id="autoSaveIndicator" class="auto-save-indicator opacity-0 bg-green-500 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

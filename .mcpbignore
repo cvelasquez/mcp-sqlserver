@@ -18,6 +18,7 @@ connections*.json
 /*.mcpb
 /CLAUDE.md
 /CONTRIBUTING.md
+/icon.svg
 /claude_desktop_config_example.json
 /glama.json
 /server.json

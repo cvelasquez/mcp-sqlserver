@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="SQL Server MCP">
+  <defs>
+    <linearGradient id="mcp-icon-body" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#A51D1C"/>
+      <stop offset="0.5" stop-color="#D7302C"/>
+      <stop offset="1" stop-color="#A51D1C"/>
+    </linearGradient>
+    <clipPath id="mcp-icon-inside">
+      <path d="M96 88V424A160 48 0 0 0 416 424V88Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Base de datos -->
+  <path d="M96 88V424A160 48 0 0 0 416 424V88Z" fill="url(#mcp-icon-body)"/>
+  <ellipse cx="256" cy="88" rx="160" ry="48" fill="#EF5B56"/>
+  <path d="M96 152A160 48 0 0 0 416 152" fill="none" stroke="#7F1514" stroke-width="10" clip-path="url(#mcp-icon-inside)"/>
+
+  <!-- MCP, dibujado con trazos para no depender de ninguna fuente -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#111827" stroke-width="68">
+      <path d="M44 386V250L104 336L164 250V386"/>
+      <path d="M311 272.5A66 68 0 1 0 311 363.5"/>
+      <path d="M348 386V250H426A42 42 0 0 1 426 334H348"/>
+    </g>
+    <g stroke="#FFFFFF" stroke-width="40">
+      <path d="M44 386V250L104 336L164 250V386"/>
+      <path d="M311 272.5A66 68 0 1 0 311 363.5"/>
+      <path d="M348 386V250H426A42 42 0 0 1 426 334H348"/>
+    </g>
+  </g>
+</svg>

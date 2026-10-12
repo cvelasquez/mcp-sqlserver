@@ -76,7 +76,8 @@ if (leaks.length > 0) {
 }
 
 // El manifiesto y el punto de entrada tienen que estar o el bundle no arranca.
-for (const required of ["manifest.json", "index.js", "src/tools.js", "connections.template.json"]) {
+// El ícono lo nombra el manifiesto: si falta, la extensión se instala sin él.
+for (const required of ["manifest.json", "index.js", "src/tools.js", "connections.template.json", "icon.png"]) {
   if (!names.includes(required)) {
     console.error(`falta ${required} en el bundle`);
     process.exit(1);

@@ -13,6 +13,7 @@
   "documentation": "https://github.com/cvelasquez/mcp-sqlserver#readme",
   "support": "https://github.com/cvelasquez/mcp-sqlserver/issues",
   "license": "MIT",
+  "icon": "icon.png",
   "keywords": [
     "sql-server",
     "mssql",
