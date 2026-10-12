@@ -165,6 +165,9 @@ try {
   console.log("arrancando con conexiones inline...");
   {
     const mcp = client(process.execPath, [installed], {
+      // La ruta le gana al JSON inline: si quien corre esto la tiene definida
+      // en su terminal, se probaría su archivo en vez de estas conexiones.
+      MSSQL_MCP_CONNECTIONS: "",
       MSSQL_MCP_CONNECTIONS_JSON: JSON.stringify(CONNECTIONS),
       SMOKE_PASSWORD: "from-env",
     }, work);
